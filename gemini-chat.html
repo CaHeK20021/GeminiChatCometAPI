@@ -999,13 +999,27 @@ async function loadUserData() {
     chatsUnsubscribe = userRef().collection('chats')
       .orderBy('createdAt', 'desc')
       .onSnapshot(snapshot => {
-        chats = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        snapshot.docChanges().forEach(change => {
+          const chatData = { id: change.doc.id, ...change.doc.data() };
+          if (change.type === 'added') {
+            if (!chats.find(c => c.id === chatData.id)) chats.unshift(chatData);
+          }
+          if (change.type === 'modified') {
+            const idx = chats.findIndex(c => c.id === chatData.id);
+            if (idx !== -1) chats[idx] = chatData;
+          }
+          if (change.type === 'removed') {
+            chats = chats.filter(c => c.id !== chatData.id);
+          }
+        });
+        // Сортируем по дате
+        chats.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
         // Clean duplicate empty chats
         const emptyChats = chats.filter(c => !c.messages || c.messages.length === 0);
         if (emptyChats.length > 1) {
           emptyChats.slice(1).forEach(c => userRef().collection('chats').doc(c.id).delete());
-          chats = chats.filter(c => c.messages.length > 0 || c.id === emptyChats[0].id);
+          chats = chats.filter(c => (c.messages && c.messages.length > 0) || c.id === emptyChats[0].id);
         }
 
         if (!activeTabId || !chats.find(c => c.id === activeTabId)) {
