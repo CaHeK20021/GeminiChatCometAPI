@@ -611,7 +611,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 
 <div id="app">
 
-  <div id="dropdown-overlay" onclick="document.getElementById('model-dropdown').classList.remove('open');document.getElementById('model-btn').classList.remove('open');document.getElementById('dropdown-overlay').style.display='none';" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.4);"></div>
+  <div id="dropdown-overlay" onclick="document.getElementById('model-dropdown').classList.remove('open');document.getElementById('model-btn').classList.remove('open');this.style.display='none';" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.4);"></div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
   <div id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -1433,9 +1433,15 @@ function buildMessageRow(msg, msgIndex, totalMessages) {
   const meta = document.createElement('div');
   meta.className = 'message-meta';
   const tokenCount = msg.tokens || (msg.text ? Math.ceil(msg.text.length / 4) : 0);
-  const tokenIcon = msg.role === 'user' ? '↑' : '↓';
+  const tokenIcon  = msg.role === 'user' ? '↑' : '↓';
   const tokenLabel = msg.tokens ? '' : '~';
-  meta.textContent = formatTime(msg.timestamp) + (tokenCount ? '  ' + tokenIcon + tokenLabel + tokenCount : '');
+  const tokenColor = msg.role === 'user' ? 'var(--success)' : 'var(--danger)';
+  const timeStr    = formatTime(msg.timestamp);
+  if (tokenCount) {
+    meta.innerHTML = timeStr + '  <span style="color:' + tokenColor + ';font-family:var(--mono)">' + tokenIcon + tokenLabel + tokenCount + '</span>';
+  } else {
+    meta.textContent = timeStr;
+  }
   const actions = document.createElement('div');
   actions.className = 'message-actions';
   if (msg.role === 'ai') {
@@ -2290,7 +2296,7 @@ function buildModelDropdown() {
     option.className = 'dropdown-option' + (model.id === currentId ? ' selected' : '');
     option.innerHTML =
       '<div class="option-info"><div class="option-name">' + model.name + '</div>' +
-      '<div class="option-price">$' + model.inputPrice + ' / $' + model.outputPrice + ' за млн токенов</div></div>' +
+      '<div class="option-price"><span style="color:var(--success)">$' + model.inputPrice + '</span> / <span style="color:var(--danger)">$' + model.outputPrice + '</span> за млн токенов</div></div>' +
       (model.badge ? '<span class="model-badge ' + model.badge + '">' + model.badgeLabel + '</span>' : '');
     option.onclick = () => {
       settings.model = model.id; settings.customModel = '';
@@ -2310,7 +2316,10 @@ function toggleModelDropdown() {
   const isOpen   = dropdown.classList.contains('open');
   dropdown.classList.toggle('open', !isOpen);
   btn.classList.toggle('open', !isOpen);
-  overlay.style.display = isOpen ? 'none' : 'block';
+  // Оверлей только на мобиле
+  if (window.innerWidth <= 640) {
+    overlay.style.display = isOpen ? 'none' : 'block';
+  }
 }
 function updateModelButton() {
   const id    = settings.customModel || settings.model;
@@ -2388,8 +2397,8 @@ function loadSettingsForm() {
     row.className = 'model-table-row' + (model.id === currentId ? ' selected' : '');
     row.innerHTML =
       '<span><div class="model-table-name">' + model.name + '</div><div class="model-table-id">' + model.id + '</div></span>' +
-      '<span class="model-table-price">$' + model.inputPrice  + '</span>' +
-      '<span class="model-table-price">$' + model.outputPrice + '</span>' +
+      '<span style="color:var(--success)" class="model-table-price">$' + model.inputPrice  + '</span>' +
+      '<span style="color:var(--danger)"  class="model-table-price">$' + model.outputPrice + '</span>' +
       '<span>' + (model.badge ? '<span class="model-badge ' + model.badge + '">' + model.badgeLabel + '</span>' : '') + '</span>';
     row.onclick = () => {
       settings.model = model.id; settings.customModel = '';
