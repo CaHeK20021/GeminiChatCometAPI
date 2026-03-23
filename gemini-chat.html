@@ -39,8 +39,8 @@ const FIREBASE_CONFIG = {
 <style>
 /* ===== CSS VARIABLES ===== */
 :root {
-  --bg:            #0d0d0f;
-  --sidebar-bg:    #111114;
+  --bg:            #000000;
+  --sidebar-bg:    #0d0d0d;
   --sidebar-hover: #1a1a1f;
   --surface:       #18181c;
   --surface2:      #222228;
@@ -53,7 +53,7 @@ const FIREBASE_CONFIG = {
   --accent-soft:   rgba(77,159,255,0.15);
   --accent-glow:   rgba(77,159,255,0.3);
   --user-bubble:   linear-gradient(135deg, #1e3a5f 0%, #1a2e4a 100%);
-  --ai-bubble:     #18181c;
+  --ai-bubble:     #0d0d0d;
   --danger:        #ff5b5b;
   --danger-soft:   rgba(255,91,91,0.15);
   --success:       #4dcc8a;
@@ -432,7 +432,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; box-shadow: 0 24px 64px rgba(0,0,0,0.5); overflow: hidden; animation: modal-in 0.2s ease; }
 @keyframes modal-in { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-#settings-modal .modal { width: 640px; max-width: calc(100vw - 32px); max-height: calc(100vh - 64px); display: flex; flex-direction: column; }
+#settings-modal .modal { width: 640px; max-width: calc(100vw - 32px); height: 580px; max-height: calc(100vh - 64px); display: flex; flex-direction: column; overflow: hidden; }
 #settings-header { padding: 18px 22px 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 #settings-header h2 { font-size: 17px; font-weight: 600; }
 .modal-close { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
@@ -444,7 +444,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 .settings-tab.active { color: var(--accent); }
 .settings-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
 
-#settings-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+#settings-body { flex: 1; overflow-y: auto; padding: 18px 22px; min-height: 0; }
 .settings-section        { display: none; flex-direction: column; gap: 16px; }
 .settings-section.active { display: flex; }
 
