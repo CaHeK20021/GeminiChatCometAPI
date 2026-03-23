@@ -541,20 +541,15 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
   position: fixed; top: 8px; right: 16px; z-index: 50;
   display: flex; align-items: center; gap: 6px;
 }
-#balance-sync-btn {
-  width: 22px; height: 22px; border-radius: 6px;
-  background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
-  color: #7c3aed; font-size: 12px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.18s ease;
-}
-#balance-sync-btn:hover { background: rgba(124,58,237,0.3); border-color: #7c3aed; }
 #balance-corner {
   font-size: 20px; font-weight: 700;
   color: #7c3aed; font-family: var(--mono);
-  pointer-events: none; letter-spacing: -0.5px;
+  letter-spacing: -0.5px; cursor: pointer;
   text-shadow: 0 0 20px rgba(124,58,237,0.4);
+  transition: opacity 0.15s;
+  padding: 4px 6px; border-radius: 8px;
 }
+#balance-corner:hover { opacity: 0.8; }
 
 /* Balance sync popup */
 #balance-popup {
@@ -1017,8 +1012,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 </div>
 
 <div id="balance-corner-wrap">
-  <button id="balance-sync-btn" onclick="toggleBalancePopup()" title="Синхронизировать баланс">↺</button>
-  <div id="balance-corner"></div>
+  <div id="balance-corner" onclick="toggleBalancePopup()" title="Синхронизировать баланс">$</div>
 </div>
 
 <div id="balance-popup">
@@ -1026,9 +1020,9 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
   <div class="balance-popup-row">
     <input type="number" id="balance-popup-input" placeholder="0.00" step="0.01" min="0">
     <a href="https://www.cometapi.com/console/credits" target="_blank"
-       style="padding:7px 10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#7c3aed;font-size:12px;text-decoration:none;white-space:nowrap;transition:all 0.18s"
+       style="padding:7px 10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#7c3aed;font-size:16px;text-decoration:none;transition:all 0.18s;display:flex;align-items:center;justify-content:center;width:36px;flex-shrink:0"
        onmouseover="this.style.background='rgba(124,58,237,0.3)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
-      CometAPI ↗
+      🚀
     </a>
   </div>
   <button class="btn-primary" style="width:100%" onclick="applyBalancePopup()">Применить</button>
@@ -2192,7 +2186,7 @@ function updateBalanceDisplay() {
   const corner = document.getElementById('balance-corner');
   if (!corner) return;
   if (settings.balance === null || settings.balance === undefined) {
-    corner.textContent = '';
+    corner.textContent = '$';
   } else {
     const b = parseFloat(settings.balance);
     corner.textContent = '$' + b.toFixed(2).replace('.', ',');
@@ -2222,7 +2216,7 @@ function applyBalancePopup() {
 document.addEventListener('click', e => {
   const popup = document.getElementById('balance-popup');
   const wrap  = document.getElementById('balance-corner-wrap');
-  if (popup?.classList.contains('open') && !popup.contains(e.target) && !wrap.contains(e.target)) {
+  if (popup?.classList.contains('open') && !popup.contains(e.target) && !wrap?.contains(e.target)) {
     popup.classList.remove('open');
   }
 });
