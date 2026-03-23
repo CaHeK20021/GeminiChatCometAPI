@@ -1318,9 +1318,10 @@ function buildMessageRow(msg, msgIndex, totalMessages) {
   if (msg.role === 'user') metaRow.style.flexDirection = 'row-reverse';
   const meta = document.createElement('div');
   meta.className = 'message-meta';
-  const tokenCount = msg.text ? Math.ceil(msg.text.length / 4) : 0;
+  const tokenCount = msg.tokens || (msg.text ? Math.ceil(msg.text.length / 4) : 0);
   const tokenIcon = msg.role === 'user' ? '↑' : '↓';
-  meta.textContent = formatTime(msg.timestamp) + (tokenCount ? '  ' + tokenIcon + tokenCount : '');
+  const tokenLabel = msg.tokens ? '' : '~';
+  meta.textContent = formatTime(msg.timestamp) + (tokenCount ? '  ' + tokenIcon + tokenLabel + tokenCount : '');
   const actions = document.createElement('div');
   actions.className = 'message-actions';
   if (msg.role === 'ai') {
@@ -1532,9 +1533,11 @@ async function sendOrStop() {
     };
 
     let aiText = '';
+    let usageData = null;
 
     if (settings.stream) {
       requestBody.stream = true;
+      requestBody.stream_options = { include_usage: true };
       addStreamingRow();
       abortController = new AbortController();
       const response = await fetch('https://api.cometapi.com/v1/chat/completions', {
@@ -1556,7 +1559,12 @@ async function sendOrStop() {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
           if (data === '[DONE]') continue;
-          try { const delta = JSON.parse(data).choices?.[0]?.delta?.content; if (delta) { aiText += delta; updateStreamingBubble(aiText); } } catch (e) {}
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) { aiText += delta; updateStreamingBubble(aiText); }
+            if (parsed.usage) usageData = parsed.usage;
+          } catch (e) {}
         }
       }
     } else {
@@ -1571,9 +1579,18 @@ async function sendOrStop() {
       if (!response.ok) { const e = await response.text(); throw new Error('HTTP ' + response.status + ': ' + e); }
       const data = await response.json();
       aiText = data.choices?.[0]?.message?.content || '';
+      usageData = data.usage || null;
+    }
+
+    // Обновляем токены пользовательского сообщения
+    if (usageData?.prompt_tokens) {
+      userMsg.tokens = usageData.prompt_tokens;
+      const userMsgInChat = chat.messages[chat.messages.length - 1];
+      if (userMsgInChat && userMsgInChat.id === userMsg.id) userMsgInChat.tokens = usageData.prompt_tokens;
     }
 
     const aiMsg = { id: 'msg_' + Date.now(), role: 'ai', text: aiText, timestamp: Date.now() };
+    if (usageData?.completion_tokens) aiMsg.tokens = usageData.completion_tokens;
     if (settings.stream) finalizeStreamingRow(aiMsg); else appendMessageToDOM(aiMsg);
     chat.messages.push(aiMsg);
     await saveSingleChat(chat);
