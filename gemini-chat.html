@@ -1130,8 +1130,11 @@ function newChat() {
   const id = 'chat_' + Date.now();
   const chat = { id, title: 'Новый чат', messages: [], createdAt: Date.now() };
   chats.unshift(chat);
-  saveSingleChat(chat);
-  setActiveTab(id);
+  // НЕ сохраняем в Firebase — только локально до первого сообщения
+  activeTabId = id;
+  saveActiveMeta();
+  renderMessages();
+  renderTabs();
   closeSidebar();
 }
 
@@ -1492,7 +1495,11 @@ async function sendOrStop() {
     timestamp: Date.now(),
   };
 
-  if (!chat.messages.length && userText) updateChatTitle(chat.id, userText);
+  if (!chat.messages.length && userText) {
+    updateChatTitle(chat.id, userText);
+    // Первое сообщение — сохраняем чат в Firebase
+    await saveSingleChat(chat);
+  }
   chat.messages.push(userMsg);
   appendMessageToDOM(userMsg);
 
