@@ -1148,24 +1148,22 @@ function getActiveChat() {
 
 function deleteChat(id, event) {
   if (event) event.stopPropagation();
+  console.log('1. Нажата кнопка удаления для ID:', id);
   const chat = chats.find(c => c.id === id);
   showConfirm('Удалить чат?', '"' + (chat ? chat.title : '') + '" будет удалён безвозвратно.', async () => {
-    // Сначала обновляем activeTabId если нужно
+    console.log('2. Подтверждение получено, начинаем удаление...');
     if (activeTabId === id) {
       const remaining = chats.filter(c => c.id !== id);
-      if (remaining.length) {
-        activeTabId = remaining[0].id;
-      } else {
-        activeTabId = null;
-      }
+      activeTabId = remaining.length ? remaining[0].id : null;
       saveActiveMeta();
       renderMessages();
     }
-    // Удаляем из Firestore — onSnapshot сам обновит список
     try {
+      console.log('3. Удаляем из Firestore...');
       await userRef().collection('chats').doc(id).delete();
+      console.log('4. Firestore удалил успешно');
     } catch(e) {
-      console.error('Ошибка удаления:', e);
+      console.error('ОШИБКА FIREBASE:', e);
       alert('Ошибка: ' + e.message);
     }
   });
