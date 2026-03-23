@@ -1114,7 +1114,7 @@ async function loadUserData() {
           chats = chats.filter(c => (c.messages && c.messages.length > 0) || c.id === emptyChats[0].id);
         }
 
-        if (!activeTabId || !chats.find(c => c.id === activeTabId)) {
+        if (!activeTabId || (!activeTabId.startsWith('draft_') && !chats.find(c => c.id === activeTabId))) {
           activeTabId = chats.length ? chats[0].id : null;
         }
         renderTabs();
@@ -1225,25 +1225,26 @@ async function resetAllData() {
 // CHATS
 // ============================================================
 function newChat() {
-  // Если уже есть пустой чат — просто переключаемся на него
-  const emptyChat = chats.find(c => !c.messages || c.messages.length === 0);
-  if (emptyChat) {
-    activeTabId = emptyChat.id;
-    saveActiveMeta();
-    renderMessages();
-    renderTabs();
+  // Если уже на пустом "черновике" — просто фокус
+  if (!activeTabId || (activeTabId && activeTabId.startsWith('draft_'))) {
     document.getElementById('textarea').focus();
     closeSidebar();
     return;
   }
-  const id = 'chat_' + Date.now();
-  const chat = { id, title: 'Новый чат', messages: [], createdAt: Date.now() };
-  chats.unshift(chat);
-  // НЕ сохраняем в Firebase — только локально до первого сообщения
-  activeTabId = id;
+  const current = getActiveChat();
+  if (current && current.messages.length === 0) {
+    document.getElementById('textarea').focus();
+    closeSidebar();
+    return;
+  }
+  // Создаём черновик только в памяти, не в списке чатов
+  activeTabId = 'draft_' + Date.now();
   saveActiveMeta();
-  renderMessages();
-  renderTabs();
+  // Показываем пустой экран без вкладки
+  const inner = document.getElementById('messages-inner');
+  inner.innerHTML = '';
+  inner.appendChild(buildEmptyState());
+  document.getElementById('textarea').focus();
   closeSidebar();
 }
 
@@ -1597,7 +1598,18 @@ async function sendOrStop() {
   if (!userText && !pendingAttachments.length) return;
   if (!settings.apiKey) { openSettings('api'); return; }
 
-  const chat = getActiveChat();
+  let chat = getActiveChat();
+
+  // Если это черновик (draft_) — создаём реальный чат
+  if (!chat && activeTabId && activeTabId.startsWith('draft_')) {
+    const id = 'chat_' + Date.now();
+    chat = { id, title: 'Новый чат', messages: [], createdAt: Date.now() };
+    chats.unshift(chat);
+    activeTabId = id;
+    saveActiveMeta();
+    renderTabs();
+  }
+
   if (!chat) return;
 
   const userMsg = {
