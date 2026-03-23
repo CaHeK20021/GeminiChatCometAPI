@@ -755,16 +755,15 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
       <button class="modal-close" onclick="closeSettings()">&#10005;</button>
     </div>
     <div id="settings-tabs">
-      <button class="settings-tab active" data-tab="api"    onclick="switchSettingsTab('api')">&#128273; API</button>
-      <button class="settings-tab"        data-tab="model"  onclick="switchSettingsTab('model')">&#129302; Модели</button>
-      <button class="settings-tab"        data-tab="gen"    onclick="switchSettingsTab('gen')">&#127897;&#65039; Генерация</button>
+      <button class="settings-tab active" data-tab="gen"    onclick="switchSettingsTab('gen')">&#127897;&#65039; Генерация</button>
       <button class="settings-tab"        data-tab="system" onclick="switchSettingsTab('system')">&#128203; Инструкция</button>
       <button class="settings-tab"        data-tab="ui"     onclick="switchSettingsTab('ui')">&#127912; Интерфейс</button>
+      <button class="settings-tab"        data-tab="api"    onclick="switchSettingsTab('api')">&#128273; API</button>
     </div>
     <div id="settings-body">
 
       <!-- API Tab -->
-      <div class="settings-section active" id="stab-api">
+      <div class="settings-section" id="stab-api">
         <div class="form-group">
           <label class="form-label">API Ключ CometAPI</label>
           <div class="form-hint">Ключ sk-... Хранится в вашем Firebase аккаунте, никуда не отправляется кроме api.cometapi.com.</div>
@@ -781,25 +780,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
       </div>
 
       <!-- Models Tab -->
-      <div class="settings-section" id="stab-model">
-        <div class="form-hint" style="color:var(--text-muted);font-size:12.5px">Нажмите на строку для выбора. Цены за 1 млн токенов на CometAPI.</div>
-        <div class="model-table" id="model-table">
-          <div class="model-table-header">
-            <span>Модель</span>
-            <span style="text-align:right">Вход</span>
-            <span style="text-align:right">Выход</span>
-            <span></span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Своя модель (вручную)</label>
-          <div class="form-hint">Точный ID модели если её нет в списке выше.</div>
-          <input type="text" class="form-input" id="s-custom-model" placeholder="gemini-3.1-pro-preview">
-        </div>
-      </div>
-
-      <!-- Generation Tab -->
-      <div class="settings-section" id="stab-gen">
+      <div class="settings-section active" id="stab-gen">
         <div class="form-group">
           <label class="form-label">Креативность ответов</label>
           <div class="form-hint">0 — строго и предсказуемо, 2 — максимально творчески. Рекомендуем 1.0.</div>
@@ -2543,7 +2524,7 @@ function updateWebSearchChip() {
 function openSettings(tab) {
   loadSettingsForm();
   document.getElementById('settings-modal').classList.add('open');
-  if (tab) switchSettingsTab(tab);
+  switchSettingsTab(tab || 'gen');
 }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
 function switchSettingsTab(tab) {
