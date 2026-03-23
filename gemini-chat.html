@@ -537,15 +537,39 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 .edit-actions { display: flex; gap: 7px; margin-top: 7px; justify-content: flex-end; }
 
 /* ===== TOP RIGHT BALANCE ===== */
+#balance-corner-wrap {
+  position: fixed; top: 8px; right: 16px; z-index: 50;
+  display: flex; align-items: center; gap: 6px;
+}
+#balance-sync-btn {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+  color: #7c3aed; font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s ease;
+}
+#balance-sync-btn:hover { background: rgba(124,58,237,0.3); border-color: #7c3aed; }
 #balance-corner {
-  position: fixed; top: 10px; right: 16px; z-index: 50;
   font-size: 20px; font-weight: 700;
-  color: #7c3aed;
-  font-family: var(--mono);
-  pointer-events: none;
-  letter-spacing: -0.5px;
+  color: #7c3aed; font-family: var(--mono);
+  pointer-events: none; letter-spacing: -0.5px;
   text-shadow: 0 0 20px rgba(124,58,237,0.4);
 }
+
+/* Balance sync popup */
+#balance-popup {
+  position: fixed; top: 40px; right: 16px; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 14px; width: 280px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  display: none; flex-direction: column; gap: 10px;
+  animation: dropdown-in 0.15s ease;
+}
+#balance-popup.open { display: flex; }
+.balance-popup-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.balance-popup-row { display: flex; gap: 8px; align-items: center; }
+.balance-popup-row input { flex: 1; padding: 7px 10px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 14px; outline: none; }
+.balance-popup-row input:focus { border-color: #7c3aed; }
 #global-drop-overlay {
   position: fixed; inset: 0; z-index: 9999;
   background: rgba(77,159,255,0.12);
@@ -675,11 +699,6 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
             <line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
         </button>
-      </div>
-      <div id="balance-chip" onclick="openSettings('api')" title="Нажмите для синхронизации баланса" style="cursor:pointer">
-        <div class="balance-dot" id="balance-dot"></div>
-        <span class="balance-text" id="balance-text">Баланс: —</span>
-        <a href="https://www.cometapi.com/console/credits" target="_blank" onclick="event.stopPropagation()" title="Открыть баланс CometAPI" style="color:var(--text-dim);font-size:16px;line-height:1;text-decoration:none;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.18s ease;flex-shrink:0" onmouseover="this.style.background='rgba(167,139,250,0.15)';this.style.color='#a78bfa'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">↗</a>
       </div>
       <button id="settings-btn" onclick="openSettings()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1006,7 +1025,23 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<div id="balance-corner"></div>
+<div id="balance-corner-wrap">
+  <button id="balance-sync-btn" onclick="toggleBalancePopup()" title="Синхронизировать баланс">↺</button>
+  <div id="balance-corner"></div>
+</div>
+
+<div id="balance-popup">
+  <div class="balance-popup-title">Синхронизация баланса</div>
+  <div class="balance-popup-row">
+    <input type="number" id="balance-popup-input" placeholder="0.00" step="0.01" min="0">
+    <a href="https://www.cometapi.com/console/credits" target="_blank"
+       style="padding:7px 10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#7c3aed;font-size:12px;text-decoration:none;white-space:nowrap;transition:all 0.18s"
+       onmouseover="this.style.background='rgba(124,58,237,0.3)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
+      CometAPI ↗
+    </a>
+  </div>
+  <button class="btn-primary" style="width:100%" onclick="applyBalancePopup()">Применить</button>
+</div>
 
 <div id="global-drop-overlay">
   <div class="drop-hint">
@@ -2179,23 +2214,33 @@ function updateBalanceDisplay() {
   }
 }
 
-function applySyncBalance() {
-  const val = parseFloat(document.getElementById('s-balance-sync').value);
+function toggleBalancePopup() {
+  const popup = document.getElementById('balance-popup');
+  const isOpen = popup.classList.contains('open');
+  popup.classList.toggle('open', !isOpen);
+  if (!isOpen) {
+    const input = document.getElementById('balance-popup-input');
+    input.value = settings.balance ?? '';
+    setTimeout(() => input.focus(), 50);
+  }
+}
+
+function applyBalancePopup() {
+  const val = parseFloat(document.getElementById('balance-popup-input').value);
   if (isNaN(val) || val < 0) return;
   settings.balance = val;
   saveSettingsOnly();
   updateBalanceDisplay();
-  document.getElementById('balance-sync-hint').textContent = '✓ Синхронизировано: $' + val.toFixed(4);
-  setTimeout(() => { document.getElementById('balance-sync-hint').textContent = ''; }, 3000);
+  document.getElementById('balance-popup').classList.remove('open');
 }
 
-function syncBalance() {
-  openSettings('api');
-  setTimeout(() => {
-    const el = document.getElementById('s-balance-sync');
-    if (el) { el.value = settings.balance ?? ''; el.focus(); }
-  }, 200);
-}
+document.addEventListener('click', e => {
+  const popup = document.getElementById('balance-popup');
+  const wrap  = document.getElementById('balance-corner-wrap');
+  if (popup?.classList.contains('open') && !popup.contains(e.target) && !wrap.contains(e.target)) {
+    popup.classList.remove('open');
+  }
+});
 
 function deductBalance(promptTokens, completionTokens) {
   if (settings.balance === null || settings.balance === undefined) return;
