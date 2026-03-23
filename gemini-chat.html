@@ -371,15 +371,24 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 #attachment-previews { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 7px; }
 .preview-item { position: relative; border-radius: 9px; overflow: hidden; border: 1px solid var(--border2); animation: preview-in 0.2s ease; }
 @keyframes preview-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-.preview-item.image { width: 68px; height: 56px; }
+.preview-item.image { width: 68px; height: 56px; cursor: pointer; }
+.preview-item.image:hover .preview-overlay { opacity: 1; }
+.preview-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 16px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
 .preview-item.image img { width: 100%; height: 100%; object-fit: cover; }
 .preview-item.file { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--surface2); height: auto; width: auto; }
 .preview-item.file .file-icon { font-size: 16px; }
 .preview-item.file .file-name { font-size: 11.5px; color: var(--text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.preview-remove { position: absolute; top: 2px; right: 2px; width: 17px; height: 17px; border-radius: 50%; background: rgba(0,0,0,0.7); border: none; color: #fff; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background var(--transition); }
+.preview-remove { position: absolute; top: 2px; right: 2px; width: 17px; height: 17px; border-radius: 50%; background: rgba(0,0,0,0.7); border: none; color: #fff; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background var(--transition); z-index: 2; }
 .preview-remove:hover { background: var(--danger); }
 .preview-item.file .preview-remove { position: static; margin-left: 2px; background: transparent; color: var(--text-dim); }
 .preview-item.file .preview-remove:hover { background: var(--danger-soft); color: var(--danger); }
+
+/* Per-image settings modal */
+#img-settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; }
+#img-settings-modal.open { display: flex; }
+.img-settings-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 20px; width: 340px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 14px; animation: modal-in 0.2s ease; }
+.img-settings-card img { width: 100%; border-radius: var(--radius); object-fit: contain; max-height: 180px; background: var(--surface2); }
+.img-settings-card .img-info { font-size: 12px; color: var(--accent); font-family: var(--mono); text-align: center; }
 
 #input-box { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; transition: border-color var(--transition), box-shadow var(--transition); }
 #input-box:focus-within { border-color: var(--accent-glow); box-shadow: 0 0 0 3px rgba(77,159,255,0.07); }
@@ -389,14 +398,15 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 #textarea::placeholder { color: var(--text-dim); }
 
 #input-actions { display: flex; align-items: center; gap: 7px; }
-.input-action-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); flex-shrink: 0; }
+.input-action-btn { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); flex-shrink: 0; }
+.input-action-btn svg { width: 17px; height: 17px; }
 .input-action-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface); }
 
-#send-btn { height: 32px; padding: 0 14px; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all var(--transition); flex-shrink: 0; }
+#send-btn { width: 44px; height: 36px; padding: 0; background: var(--accent); border: none; border-radius: 9px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); flex-shrink: 0; }
 #send-btn:hover    { filter: brightness(1.1); transform: translateY(-1px); }
 #send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 #send-btn.stop     { background: var(--danger); }
-#send-btn svg { width: 13px; height: 13px; }
+#send-btn svg { width: 17px; height: 17px; }
 
 #input-hint { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
 
@@ -684,7 +694,6 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
               <svg id="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
-              <span id="send-label">Отправить</span>
             </button>
           </div>
         </div>
@@ -901,6 +910,36 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 </div>
 
 <div id="paste-hint">&#128247; Файл добавлен!</div>
+
+<!-- IMAGE SETTINGS MODAL -->
+<div id="img-settings-modal">
+  <div class="img-settings-card">
+    <img id="img-settings-preview" src="" alt="">
+    <div class="img-info" id="img-settings-info"></div>
+    <div class="form-group">
+      <label class="form-label">Размер для этой фотки</label>
+      <select class="form-select" id="img-settings-size">
+        <option value="512">512px — эконом</option>
+        <option value="768">768px — баланс</option>
+        <option value="1280">1280px — высокое качество</option>
+        <option value="1920">1920px — максимум</option>
+        <option value="0">Без сжатия (оригинал)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Качество</label>
+      <div class="range-group">
+        <input type="range" class="range-input" id="img-settings-quality" min="0.4" max="1" step="0.05" value="0.85"
+          oninput="document.getElementById('v-img-settings-quality').textContent = Math.round(this.value * 100) + '%'">
+        <span class="range-value" id="v-img-settings-quality">85%</span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeImgSettings()">Отмена</button>
+      <button class="btn-primary" onclick="applyImgSettings()">Применить</button>
+    </div>
+  </div>
+</div>
 
 <!-- IMAGE LIGHTBOX -->
 <div id="image-lightbox" onclick="closeLightbox()">
@@ -1704,14 +1743,13 @@ function stopGeneration() { abortController?.abort(); setGenerating(false); }
 
 function setGenerating(active) {
   isGenerating = active;
-  const btn   = document.getElementById('send-btn');
-  const label = document.getElementById('send-label');
-  const icon  = document.getElementById('send-icon');
+  const btn  = document.getElementById('send-btn');
+  const icon = document.getElementById('send-icon');
   if (active) {
-    btn.classList.add('stop'); label.textContent = 'Стоп';
+    btn.classList.add('stop');
     icon.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2" fill="currentColor"/>';
   } else {
-    btn.classList.remove('stop'); label.textContent = 'Отправить';
+    btn.classList.remove('stop');
     icon.innerHTML = '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>';
     abortController = null;
   }
@@ -2009,7 +2047,7 @@ function addImageFile(file) {
       canvas.width = width; canvas.height = height;
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/jpeg', quality);
-      pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name });
+      pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name, origFile: file });
       renderAttachmentPreviews();
       showPasteHint('🖼️ Изображение добавлено! (' + width + '×' + height + ')');
     };
@@ -2044,10 +2082,14 @@ function renderAttachmentPreviews() {
     const wrap = document.createElement('div');
     if (att.type === 'image') {
       wrap.className = 'preview-item image';
-      wrap.innerHTML = '<img src="' + att.dataUrl + '"><button class="preview-remove" onclick="removeAttachment(' + index + ')">&#215;</button>';
+      wrap.innerHTML =
+        '<img src="' + att.dataUrl + '">' +
+        '<div class="preview-overlay">⚙️</div>' +
+        '<button class="preview-remove" onclick="event.stopPropagation();removeAttachment(' + index + ')">&#215;</button>';
+      wrap.addEventListener('click', () => openImgSettings(index));
     } else {
       wrap.className = 'preview-item file';
-      const icon = att.type === 'pdf' ? '\uD83D\uDCC4' : '\uD83D\uDCDD';
+      const icon = att.type === 'pdf' ? '📄' : '📝';
       wrap.innerHTML = '<span class="file-icon">' + icon + '</span><span class="file-name">' + escapeHtml(att.name) + '</span><button class="preview-remove" onclick="removeAttachment(' + index + ')">&#215;</button>';
     }
     container.appendChild(wrap);
@@ -2055,6 +2097,92 @@ function renderAttachmentPreviews() {
 }
 function removeAttachment(index) { pendingAttachments.splice(index, 1); renderAttachmentPreviews(); }
 function clearAttachments() { pendingAttachments = []; document.getElementById('attachment-previews').innerHTML = ''; }
+
+// ============================================================
+// PER-IMAGE SETTINGS MODAL
+// ============================================================
+let imgSettingsIndex = -1;
+let imgSettingsOrigFile = null;
+
+function openImgSettings(index) {
+  const att = pendingAttachments[index];
+  if (!att || att.type !== 'image') return;
+  imgSettingsIndex = index;
+
+  document.getElementById('img-settings-preview').src = att.dataUrl;
+  document.getElementById('img-settings-size').value = String(att.overrideSize ?? settings.imgMaxSize ?? 1280);
+
+  const quality = att.overrideQuality ?? settings.imgQuality ?? 0.85;
+  document.getElementById('img-settings-quality').value = quality;
+  document.getElementById('v-img-settings-quality').textContent = Math.round(quality * 100) + '%';
+
+  // Show current dimensions
+  const img = new Image();
+  img.onload = () => {
+    document.getElementById('img-settings-info').textContent =
+      'Текущий размер: ' + img.naturalWidth + '×' + img.naturalHeight + 'px';
+  };
+  img.src = att.dataUrl;
+
+  document.getElementById('img-settings-modal').classList.add('open');
+}
+
+function closeImgSettings() {
+  document.getElementById('img-settings-modal').classList.remove('open');
+  imgSettingsIndex = -1;
+}
+
+async function applyImgSettings() {
+  const att = pendingAttachments[imgSettingsIndex];
+  if (!att) return closeImgSettings();
+
+  const maxSize = parseInt(document.getElementById('img-settings-size').value);
+  const quality = parseFloat(document.getElementById('img-settings-quality').value);
+
+  att.overrideSize    = maxSize;
+  att.overrideQuality = quality;
+
+  // Re-compress with new settings
+  const origFile = att.origFile;
+  if (origFile) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (maxSize === 0) {
+        const dataUrl = e.target.result;
+        att.dataUrl = dataUrl;
+        att.base64  = dataUrl.split(',')[1];
+        renderAttachmentPreviews();
+        closeImgSettings();
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+          else { width = Math.round(width * maxSize / height); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        att.dataUrl  = dataUrl;
+        att.base64   = dataUrl.split(',')[1];
+        att.mimeType = 'image/jpeg';
+        renderAttachmentPreviews();
+        closeImgSettings();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(origFile);
+  } else {
+    closeImgSettings();
+  }
+}
+
+document.getElementById('img-settings-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeImgSettings();
+});
 
 function showPasteHint(message) {
   const hint = document.getElementById('paste-hint');
