@@ -666,9 +666,9 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
           </svg>
         </button>
       </div>
-      <a href="https://cometapi.com/dashboard" target="_blank" id="balance-chip" title="Открыть личный кабинет CometAPI" style="text-decoration:none">
+      <a href="https://www.cometapi.com/console/credits" target="_blank" id="balance-chip" title="Открыть баланс CometAPI" style="text-decoration:none">
         <div class="balance-dot" id="balance-dot"></div>
-        <span class="balance-text" id="balance-text">Баланс CometAPI →</span>
+        <span class="balance-text" id="balance-text">Баланс CometAPI ↗</span>
       </a>
       <button id="settings-btn" onclick="openSettings()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2549,7 +2549,6 @@ function loadSettingsForm() {
   document.getElementById('s-system-prompt').value       = settings.systemPrompt;
   document.getElementById('s-context-limit').value       = settings.contextLimit;
   document.getElementById('s-app-name').value            = settings.appName || 'Gemini';
-  document.getElementById('s-custom-model').value        = settings.customModel || '';
   document.getElementById('s-theme').value               = settings.theme;
   document.getElementById('s-img-max-size').value        = String(settings.imgMaxSize ?? 1280);
   document.getElementById('s-img-quality').value         = settings.imgQuality ?? 0.85;
@@ -2558,34 +2557,7 @@ function loadSettingsForm() {
   document.getElementById('toggle-stream').className    = 'toggle-switch' + (settings.stream         ? ' on' : '');
   document.getElementById('toggle-context').className   = 'toggle-switch' + (settings.keepContext    ? ' on' : '');
   document.getElementById('toggle-markdown').className  = 'toggle-switch' + (settings.renderMarkdown ? ' on' : '');
-  document.getElementById('toggle-highlight').className = 'toggle-switch' + (settings.highlight      ? ' on' : '');
-
-  const table = document.getElementById('model-table');
-  const header = table.querySelector('.model-table-header');
-  table.innerHTML = ''; table.appendChild(header);
-  const currentKey = settings.modelKey || settings.model;
-  GEMINI_MODELS.forEach(model => {
-    const key = model.modelKey || model.id;
-    const row = document.createElement('div');
-    row.className = 'model-table-row' + (key === currentKey ? ' selected' : '');
-    const caps =
-      (model.thinking ? '<span class="cap-badge think">🧠</span>' : '') +
-      (model.search   ? '<span class="cap-badge search">🔍</span>' : '');
-    row.innerHTML =
-      '<span><div class="model-table-name">' + model.name + '</div><div class="model-table-id">' + model.id + '</div></span>' +
-      '<span style="color:var(--success)" class="model-table-price">$' + model.inputPrice  + '</span>' +
-      '<span style="color:var(--danger)"  class="model-table-price">$' + model.outputPrice + '</span>' +
-      '<span style="display:flex;gap:3px;justify-content:flex-end">' + caps + (model.badge ? '<span class="model-badge ' + model.badge + '">' + model.badgeLabel + '</span>' : '') + '</span>';
-    row.onclick = () => {
-      settings.model    = model.id;
-      settings.modelKey = key;
-      settings.customModel = '';
-      document.getElementById('s-custom-model').value = '';
-      table.querySelectorAll('.model-table-row').forEach(r => r.classList.remove('selected'));
-      row.classList.add('selected');
-    };
-    table.appendChild(row);
-  });
+  document.getElementById('toggle-highlight').className = 'toggle-switch' + (settings.highlight ? ' on' : '');
 }
 
 function toggleSetting(key) {
