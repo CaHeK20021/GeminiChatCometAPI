@@ -395,7 +395,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 .modal-close { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
 .modal-close:hover { border-color: var(--border2); color: var(--text); }
 
-#settings-tabs { display: flex; padding: 12px 22px 0; gap: 2px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+#settings-tabs { display: flex; padding: 0 22px; gap: 2px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: nowrap; overflow-x: auto; height: 48px; align-items: flex-end; }
 .settings-tab { padding: 7px 13px; border-radius: 7px 7px 0 0; border: none; background: none; color: var(--text-muted); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; position: relative; transition: all var(--transition); }
 .settings-tab:hover { color: var(--text); }
 .settings-tab.active { color: var(--accent); }
@@ -988,6 +988,8 @@ async function loadUserData() {
     const settingsDoc = await userRef().collection('data').doc('settings').get();
     if (settingsDoc.exists) {
       settings = { ...DEFAULT_SETTINGS, ...settingsDoc.data() };
+      // Принудительно ограничиваем контекст до 10
+      if (settings.contextLimit > 10) settings.contextLimit = 10;
     }
 
     // Load active tab
@@ -999,21 +1001,7 @@ async function loadUserData() {
     chatsUnsubscribe = userRef().collection('chats')
       .orderBy('createdAt', 'desc')
       .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          const chatData = { id: change.doc.id, ...change.doc.data() };
-          if (change.type === 'added') {
-            if (!chats.find(c => c.id === chatData.id)) chats.unshift(chatData);
-          }
-          if (change.type === 'modified') {
-            const idx = chats.findIndex(c => c.id === chatData.id);
-            if (idx !== -1) chats[idx] = chatData;
-          }
-          if (change.type === 'removed') {
-            chats = chats.filter(c => c.id !== chatData.id);
-          }
-        });
-        // Сортируем по дате
-        chats.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        chats = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Clean duplicate empty chats
         const emptyChats = chats.filter(c => !c.messages || c.messages.length === 0);
@@ -1027,6 +1015,8 @@ async function loadUserData() {
         }
         renderTabs();
         renderMessages();
+      }, err => {
+        console.error('onSnapshot error:', err);
       });
 
     initApp();
@@ -1160,14 +1150,24 @@ function deleteChat(id, event) {
   if (event) event.stopPropagation();
   const chat = chats.find(c => c.id === id);
   showConfirm('Удалить чат?', '"' + (chat ? chat.title : '') + '" будет удалён безвозвратно.', async () => {
+    // Сначала обновляем activeTabId если нужно
     if (activeTabId === id) {
       const remaining = chats.filter(c => c.id !== id);
-      activeTabId = remaining.length ? remaining[0].id : null;
+      if (remaining.length) {
+        activeTabId = remaining[0].id;
+      } else {
+        activeTabId = null;
+      }
       saveActiveMeta();
       renderMessages();
     }
-    await deleteChatFromDB(id);
-    // onSnapshot сам обновит chats и вызовет renderTabs
+    // Удаляем из Firestore — onSnapshot сам обновит список
+    try {
+      await userRef().collection('chats').doc(id).delete();
+    } catch(e) {
+      console.error('Ошибка удаления:', e);
+      alert('Ошибка: ' + e.message);
+    }
   });
 }
 
