@@ -392,11 +392,18 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 .preview-item.file .preview-remove:hover { background: var(--danger-soft); color: var(--danger); }
 
 /* Per-image settings modal */
-#img-settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; }
+#img-settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 16px; }
 #img-settings-modal.open { display: flex; }
-.img-settings-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 20px; width: 340px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 14px; animation: modal-in 0.2s ease; }
-.img-settings-card img { width: 100%; border-radius: var(--radius); object-fit: contain; max-height: 180px; background: var(--surface2); }
+.img-settings-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 20px; width: 100%; max-width: 680px; display: flex; gap: 20px; animation: modal-in 0.2s ease; }
+.img-settings-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.img-settings-left img { width: 100%; border-radius: var(--radius); object-fit: contain; max-height: 60vh; background: var(--surface2); }
+.img-settings-right { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
 .img-settings-card .img-info { font-size: 12px; color: var(--accent); font-family: var(--mono); text-align: center; }
+@media (max-width: 640px) {
+  .img-settings-card { flex-direction: column; max-width: 100%; }
+  .img-settings-right { width: 100%; }
+  .img-settings-left img { max-height: 40vh; }
+}
 
 #input-box { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; transition: border-color var(--transition), box-shadow var(--transition); }
 #input-box:focus-within { border-color: var(--accent-glow); box-shadow: 0 0 0 3px rgba(77,159,255,0.07); }
@@ -528,7 +535,19 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 }
 .edit-actions { display: flex; gap: 7px; margin-top: 7px; justify-content: flex-end; }
 
-/* ===== SYNC INDICATOR ===== */
+/* ===== GLOBAL DROP OVERLAY ===== */
+#global-drop-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(77,159,255,0.12);
+  border: 3px dashed var(--accent);
+  border-radius: 16px;
+  margin: 8px;
+  display: none; align-items: center; justify-content: center;
+  pointer-events: none;
+  animation: overlay-in 0.15s ease;
+}
+#global-drop-overlay.show { display: flex; }
+.drop-hint { text-align: center; color: var(--accent); display: flex; flex-direction: column; align-items: center; gap: 8px; }
 #sync-indicator {
   position: fixed; bottom: 16px; right: 16px;
   background: var(--surface); border: 1px solid var(--border2);
@@ -957,29 +976,33 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 <!-- IMAGE SETTINGS MODAL -->
 <div id="img-settings-modal">
   <div class="img-settings-card">
-    <img id="img-settings-preview" src="" alt="">
-    <div class="img-info" id="img-settings-info"></div>
-    <div class="form-group">
-      <label class="form-label">Размер для этой фотки</label>
-      <select class="form-select" id="img-settings-size">
-        <option value="512">512px — эконом</option>
-        <option value="768">768px — баланс</option>
-        <option value="1280">1280px — высокое качество</option>
-        <option value="1920">1920px — максимум</option>
-        <option value="0">Без сжатия (оригинал)</option>
-      </select>
+    <div class="img-settings-left">
+      <img id="img-settings-preview" src="" alt="">
+      <div class="img-info" id="img-settings-info"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Качество</label>
-      <div class="range-group">
-        <input type="range" class="range-input" id="img-settings-quality" min="0.4" max="1" step="0.05" value="0.85"
-          oninput="document.getElementById('v-img-settings-quality').textContent = Math.round(this.value * 100) + '%'">
-        <span class="range-value" id="v-img-settings-quality">85%</span>
+    <div class="img-settings-right">
+      <div class="form-group">
+        <label class="form-label">Размер для этой фотки</label>
+        <select class="form-select" id="img-settings-size" onchange="previewImgSettings()">
+          <option value="512">512px — эконом</option>
+          <option value="768">768px — баланс</option>
+          <option value="1280">1280px — высокое качество</option>
+          <option value="1920">1920px — максимум</option>
+          <option value="0">Без сжатия (оригинал)</option>
+        </select>
       </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="closeImgSettings()">Отмена</button>
-      <button class="btn-primary" onclick="applyImgSettings()">Применить</button>
+      <div class="form-group">
+        <label class="form-label">Качество</label>
+        <div class="range-group">
+          <input type="range" class="range-input" id="img-settings-quality" min="0.4" max="1" step="0.05" value="0.85"
+            oninput="document.getElementById('v-img-settings-quality').textContent = Math.round(this.value * 100) + '%'; previewImgSettings()">
+          <span class="range-value" id="v-img-settings-quality">85%</span>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:auto">
+        <button class="btn-secondary" onclick="closeImgSettings()">Отмена</button>
+        <button class="btn-primary" onclick="applyImgSettings()">Применить</button>
+      </div>
     </div>
   </div>
 </div>
@@ -987,6 +1010,14 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 <!-- IMAGE LIGHTBOX -->
 <div id="image-lightbox" onclick="closeLightbox()">
   <img id="lightbox-img" src="" alt="">
+</div>
+
+<div id="global-drop-overlay">
+  <div class="drop-hint">
+    <div style="font-size:48px">📎</div>
+    <div style="font-size:18px;font-weight:600">Отпустите чтобы добавить</div>
+    <div style="font-size:13px;opacity:0.7">Изображения, PDF, текстовые файлы</div>
+  </div>
 </div>
 
 <!-- SYNC INDICATOR -->
@@ -2214,22 +2245,64 @@ function openImgSettings(index) {
   if (!att || att.type !== 'image') return;
   imgSettingsIndex = index;
 
-  document.getElementById('img-settings-preview').src = att.dataUrl;
+  document.getElementById('img-settings-preview').src = att.origDataUrl || att.dataUrl;
   document.getElementById('img-settings-size').value = String(att.overrideSize ?? settings.imgMaxSize ?? 1280);
 
   const quality = att.overrideQuality ?? settings.imgQuality ?? 0.85;
   document.getElementById('img-settings-quality').value = quality;
   document.getElementById('v-img-settings-quality').textContent = Math.round(quality * 100) + '%';
 
-  // Show current dimensions
+  // Сохраняем оригинальный dataUrl для пересжатия
+  if (!att.origDataUrl) att.origDataUrl = att.dataUrl;
+
+  updateImgInfo(att.origDataUrl);
+  document.getElementById('img-settings-modal').classList.add('open');
+}
+
+function updateImgInfo(dataUrl) {
   const img = new Image();
   img.onload = () => {
+    const sizeKb = Math.round(dataUrl.length * 0.75 / 1024);
     document.getElementById('img-settings-info').textContent =
-      'Текущий размер: ' + img.naturalWidth + '×' + img.naturalHeight + 'px';
+      img.naturalWidth + '×' + img.naturalHeight + 'px · ~' + sizeKb + ' КБ';
   };
-  img.src = att.dataUrl;
+  img.src = dataUrl;
+}
 
-  document.getElementById('img-settings-modal').classList.add('open');
+let previewTimeout = null;
+function previewImgSettings() {
+  clearTimeout(previewTimeout);
+  previewTimeout = setTimeout(() => {
+    const att = pendingAttachments[imgSettingsIndex];
+    if (!att || !att.origFile) return;
+    const maxSize = parseInt(document.getElementById('img-settings-size').value);
+    const quality = parseFloat(document.getElementById('img-settings-quality').value);
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (maxSize === 0) {
+        document.getElementById('img-settings-preview').src = e.target.result;
+        updateImgInfo(e.target.result);
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+          else { width = Math.round(width * maxSize / height); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const previewUrl = canvas.toDataURL('image/jpeg', quality);
+        document.getElementById('img-settings-preview').src = previewUrl;
+        updateImgInfo(previewUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(att.origFile);
+  }, 200); // Задержка 200мс чтобы не дёргать при перетаскивании слайдера
 }
 
 function closeImgSettings() {
@@ -2299,6 +2372,29 @@ const inputBox = document.getElementById('input-box');
 inputBox.addEventListener('dragover',  e => { e.preventDefault(); inputBox.classList.add('drag-over'); });
 inputBox.addEventListener('dragleave', () => inputBox.classList.remove('drag-over'));
 inputBox.addEventListener('drop', e => { e.preventDefault(); inputBox.classList.remove('drag-over'); Array.from(e.dataTransfer.files).forEach(f => addAnyFile(f)); });
+
+// Глобальный drag & drop — в любую часть страницы
+let dragCounter = 0;
+document.addEventListener('dragenter', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  dragCounter++;
+  document.getElementById('global-drop-overlay').classList.add('show');
+});
+document.addEventListener('dragleave', e => {
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    document.getElementById('global-drop-overlay').classList.remove('show');
+  }
+});
+document.addEventListener('dragover', e => { e.preventDefault(); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  dragCounter = 0;
+  document.getElementById('global-drop-overlay').classList.remove('show');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/') || f.type === 'application/pdf' || f.type.startsWith('text/'));
+  if (files.length) files.forEach(f => addAnyFile(f));
+});
 
 document.addEventListener('paste', e => {
   if (e.target.id === 'textarea') return;
