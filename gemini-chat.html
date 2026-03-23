@@ -548,8 +548,23 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
   #sidebar-overlay.show { display: block; }
 
   #model-btn { font-size: 12px; padding: 6px 10px; }
-  #model-dropdown { min-width: calc(100vw - 24px); left: 0; }
+  #model-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    z-index: 200;
+  }
 
+  .header-chip svg { width: 16px; height: 16px; }
   .header-chip span { display: none; }
   .header-chip { padding: 6px 9px; }
 
@@ -593,7 +608,9 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 
 <div id="app">
 
-  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div id="dropdown-overlay" onclick="document.getElementById('model-dropdown').classList.remove('open');document.getElementById('model-btn').classList.remove('open');document.getElementById('dropdown-overlay').style.display='none';" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.4);"></div>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
   <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
@@ -1208,8 +1225,13 @@ async function resetAllData() {
 // CHATS
 // ============================================================
 function newChat() {
-  const current = getActiveChat();
-  if (current && current.messages.length === 0) {
+  // Если уже есть пустой чат — просто переключаемся на него
+  const emptyChat = chats.find(c => !c.messages || c.messages.length === 0);
+  if (emptyChat) {
+    activeTabId = emptyChat.id;
+    saveActiveMeta();
+    renderMessages();
+    renderTabs();
     document.getElementById('textarea').focus();
     closeSidebar();
     return;
@@ -2266,8 +2288,11 @@ function buildModelDropdown() {
 function toggleModelDropdown() {
   const dropdown = document.getElementById('model-dropdown');
   const btn      = document.getElementById('model-btn');
+  const overlay  = document.getElementById('dropdown-overlay');
   const isOpen   = dropdown.classList.contains('open');
-  dropdown.classList.toggle('open', !isOpen); btn.classList.toggle('open', !isOpen);
+  dropdown.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  overlay.style.display = isOpen ? 'none' : 'block';
 }
 function updateModelButton() {
   const id    = settings.customModel || settings.model;
