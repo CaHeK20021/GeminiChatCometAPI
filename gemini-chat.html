@@ -1048,22 +1048,22 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 // ============================================================
 const GEMINI_MODELS = [
   // Gemini 3
-  { id: 'gemini-3-flash',         name: 'Gemini 3 Быстрая',       inputPrice: 0.24,   outputPrice: 2.00,  badge: 'fast',  badgeLabel: 'Быстрая', group: 'Gemini 3',   thinking: false, search: true,  thinkingBudget: 0     },
-  { id: 'gemini-3-flash',         name: 'Gemini 3 Думающая',       inputPrice: 0.24,   outputPrice: 2.00,  badge: 'smart', badgeLabel: 'Думает',  group: 'Gemini 3',   thinking: true,  search: true,  thinkingBudget: 8192, modelKey: 'gemini-3-flash-thinking' },
-  { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Про',          inputPrice: 2.00,   outputPrice: 12.00, badge: 'smart', badgeLabel: 'Про',     group: 'Gemini 3',   thinking: false, search: true,  thinkingBudget: 0     },
-  { id: 'gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Лайт',  inputPrice: 0.25,   outputPrice: 1.50,  badge: 'fast',  badgeLabel: 'Лайт',   group: 'Gemini 3',   thinking: false, search: false, thinkingBudget: 0     },
+  { id: 'gemini-3.1-pro-preview',              name: 'Gemini 3.1 Про',          inputPrice: 2.00,   outputPrice: 12.00, badge: 'smart', badgeLabel: 'Про',     group: 'Gemini 3',   thinking: false, search: true,  thinkingBudget: 0,    modelKey: 'gemini-3.1-pro-preview'         },
+  { id: 'gemini-3-flash',                       name: 'Gemini 3 Думающая',       inputPrice: 0.24,   outputPrice: 2.00,  badge: 'smart', badgeLabel: 'Думает',  group: 'Gemini 3',   thinking: true,  search: true,  thinkingBudget: 8192, modelKey: 'gemini-3-flash-thinking'        },
+  { id: 'gemini-3-flash',                       name: 'Gemini 3 Быстрая',        inputPrice: 0.24,   outputPrice: 2.00,  badge: 'fast',  badgeLabel: 'Быстрая', group: 'Gemini 3',   thinking: false, search: true,  thinkingBudget: 0,    modelKey: 'gemini-3-flash'                 },
+  { id: 'gemini-3.1-flash-lite-preview',        name: 'Gemini 3.1 Лайт',         inputPrice: 0.25,   outputPrice: 1.50,  badge: 'fast',  badgeLabel: 'Лайт',   group: 'Gemini 3',   thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-3.1-flash-lite-preview'  },
   // Gemini 2.5
-  { id: 'gemini-2.5-flash-preview-05-20', name: 'Gemini 2.5 Быстрая', inputPrice: 0.15, outputPrice: 0.60, badge: 'fast',  badgeLabel: 'Быстрая', group: 'Gemini 2.5', thinking: false, search: true,  thinkingBudget: 0     },
-  { id: 'gemini-2.5-flash-preview-05-20', name: 'Gemini 2.5 Думающая', inputPrice: 0.15, outputPrice: 0.60, badge: 'smart', badgeLabel: 'Думает', group: 'Gemini 2.5', thinking: true,  search: true,  thinkingBudget: 8192, modelKey: 'gemini-2.5-flash-thinking' },
-  { id: 'gemini-2.5-pro-preview-06-05',  name: 'Gemini 2.5 Про',   inputPrice: 1.25,  outputPrice: 10.00, badge: 'smart', badgeLabel: 'Про',     group: 'Gemini 2.5', thinking: false, search: true,  thinkingBudget: 0     },
-  { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Лайт', inputPrice: 0.075, outputPrice: 0.30, badge: 'fast', badgeLabel: 'Лайт', group: 'Gemini 2.5', thinking: false, search: false, thinkingBudget: 0    },
+  { id: 'gemini-2.5-pro-preview-06-05',         name: 'Gemini 2.5 Про',          inputPrice: 1.25,   outputPrice: 10.00, badge: 'smart', badgeLabel: 'Про',     group: 'Gemini 2.5', thinking: false, search: true,  thinkingBudget: 0,    modelKey: 'gemini-2.5-pro-preview-06-05'   },
+  { id: 'gemini-2.5-flash-preview-05-20',       name: 'Gemini 2.5 Думающая',     inputPrice: 0.15,   outputPrice: 0.60,  badge: 'smart', badgeLabel: 'Думает',  group: 'Gemini 2.5', thinking: true,  search: true,  thinkingBudget: 8192, modelKey: 'gemini-2.5-flash-thinking'      },
+  { id: 'gemini-2.5-flash-preview-05-20',       name: 'Gemini 2.5 Быстрая',      inputPrice: 0.15,   outputPrice: 0.60,  badge: 'fast',  badgeLabel: 'Быстрая', group: 'Gemini 2.5', thinking: false, search: true,  thinkingBudget: 0,    modelKey: 'gemini-2.5-flash-preview-05-20' },
+  { id: 'gemini-2.5-flash-lite-preview-06-17',  name: 'Gemini 2.5 Лайт',         inputPrice: 0.075,  outputPrice: 0.30,  badge: 'fast',  badgeLabel: 'Лайт',   group: 'Gemini 2.5', thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-2.5-flash-lite-preview-06-17' },
   // Gemini 2.0
-  { id: 'gemini-2.0-flash',      name: 'Gemini 2.0 Быстрая',      inputPrice: 0.10,   outputPrice: 0.40,  badge: '',      badgeLabel: '',        group: 'Gemini 2.0', thinking: false, search: false, thinkingBudget: 0     },
-  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Лайт',         inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',        group: 'Gemini 2.0', thinking: false, search: false, thinkingBudget: 0     },
+  { id: 'gemini-2.0-flash',                     name: 'Gemini 2.0 Быстрая',      inputPrice: 0.10,   outputPrice: 0.40,  badge: '',      badgeLabel: '',        group: 'Gemini 2.0', thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-2.0-flash'               },
+  { id: 'gemini-2.0-flash-lite',                name: 'Gemini 2.0 Лайт',         inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',        group: 'Gemini 2.0', thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-2.0-flash-lite'          },
   // Gemini 1.5
-  { id: 'gemini-1.5-pro',        name: 'Gemini 1.5 Про',          inputPrice: 1.25,   outputPrice: 5.00,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0     },
-  { id: 'gemini-1.5-flash',      name: 'Gemini 1.5 Быстрая',      inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0     },
-  { id: 'gemini-1.5-flash-8b',   name: 'Gemini 1.5 Быстрая 8B',  inputPrice: 0.0375, outputPrice: 0.15,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0     },
+  { id: 'gemini-1.5-pro',                       name: 'Gemini 1.5 Про',          inputPrice: 1.25,   outputPrice: 5.00,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-1.5-pro'                 },
+  { id: 'gemini-1.5-flash',                     name: 'Gemini 1.5 Быстрая',      inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-1.5-flash'               },
+  { id: 'gemini-1.5-flash-8b',                  name: 'Gemini 1.5 Быстрая 8B',   inputPrice: 0.0375, outputPrice: 0.15,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0,    modelKey: 'gemini-1.5-flash-8b'            },
 ];
 
 // ============================================================
