@@ -799,15 +799,6 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
           <div class="form-hint">Ключ sk-... Хранится в вашем Firebase аккаунте, никуда не отправляется кроме api.cometapi.com.</div>
           <input type="password" class="form-input" id="s-api-key" placeholder="sk-...">
         </div>
-        <div class="form-group">
-          <label class="form-label">Синхронизировать баланс</label>
-          <div class="form-hint">Введи текущий баланс с <a href="https://www.cometapi.com/console/credits" target="_blank" style="color:var(--accent)">cometapi.com/console/credits</a> — дальше он будет автоматически уменьшаться по мере использования.</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="number" class="form-input" id="s-balance-sync" placeholder="0.00" step="0.01" min="0" style="flex:1">
-            <button class="btn-primary" style="flex-shrink:0;white-space:nowrap" onclick="applySyncBalance()">Синхронизировать</button>
-          </div>
-          <div id="balance-sync-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:4px"></div>
-        </div>
         <div class="section-divider"></div>
         <div class="toggle-row">
           <div class="toggle-info">
@@ -2198,19 +2189,13 @@ function deleteUserMessage(msgId) {
 // BALANCE TRACKING
 // ============================================================
 function updateBalanceDisplay() {
-  const text   = document.getElementById('balance-text');
-  const dot    = document.getElementById('balance-dot');
   const corner = document.getElementById('balance-corner');
+  if (!corner) return;
   if (settings.balance === null || settings.balance === undefined) {
-    text.textContent   = 'Баланс: —';
-    if (corner) corner.textContent = '';
-    dot.className = 'balance-dot';
+    corner.textContent = '';
   } else {
     const b = parseFloat(settings.balance);
-    const formatted = b.toFixed(2).replace('.', ',');
-    text.textContent = 'Баланс: ' + formatted;
-    if (corner) corner.textContent = '$' + formatted;
-    dot.className = 'balance-dot' + (b < 0.1 ? ' error' : b < 0.5 ? ' loading' : '');
+    corner.textContent = '$' + b.toFixed(2).replace('.', ',');
   }
 }
 
