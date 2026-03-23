@@ -772,18 +772,6 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
           <input type="password" class="form-input" id="s-api-key" placeholder="sk-...">
         </div>
         <div class="section-divider"></div>
-        <div class="form-group">
-          <label class="form-label">Уровень мышления <span style="font-size:11px;color:var(--accent);font-weight:400">(Gemini 2.5/3)</span></label>
-          <div class="form-hint">Глубина размышлений перед ответом. Выше = точнее, но медленнее и дороже.</div>
-          <select class="form-select" id="s-thinking-level">
-            <option value="none">Выключено</option>
-            <option value="min">Минимальное (быстро)</option>
-            <option value="low">Низкое</option>
-            <option value="medium">Среднее (рекомендуем)</option>
-            <option value="high">Высокое (медленно)</option>
-          </select>
-        </div>
-        <div class="section-divider"></div>
         <div class="toggle-row">
           <div class="toggle-info">
             <div class="toggle-title">Стриминг ответов</div>
@@ -855,14 +843,9 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Уровень мышления <span style="font-size:11px;color:var(--accent);font-weight:400">(Gemini 2.5/3)</span></label>
-          <div class="form-hint">Чем выше — тем глубже модель думает перед ответом. Высокий = медленнее но точнее. Только для моделей с поддержкой thinking.</div>
-          <select class="form-select" id="s-thinking-level">
-            <option value="none">Выключено (быстро, без раздумий)</option>
-            <option value="low">Низкий (лёгкие задачи)</option>
-            <option value="medium" selected>Средний (баланс)</option>
-            <option value="high">Высокий (сложные задачи, медленнее)</option>
-          </select>
+          <label class="form-label">Токены на размышление 🧠</label>
+          <div class="form-hint">Сколько токенов думающая модель может потратить на внутренние рассуждения. Больше = глубже но дороже. Работает только с «Думающими» моделями.</div>
+          <input type="number" class="form-input" id="s-thinking-budget" value="8192" min="512" max="32768" step="512">
         </div>
         <div class="section-divider"></div>
         <div class="toggle-row">
@@ -1031,17 +1014,23 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 // MODELS
 // ============================================================
 const GEMINI_MODELS = [
-  { id: 'gemini-3.1-pro-preview',             name: 'Gemini 3.1 Pro',        inputPrice: 2.00,   outputPrice: 12.00, badge: 'smart', badgeLabel: 'Smart', group: 'Gemini 3',   thinking: false, search: true  },
-  { id: 'gemini-3-flash',                      name: 'Gemini 3 Flash',        inputPrice: 0.24,   outputPrice: 2.00,  badge: 'fast',  badgeLabel: 'Fast',  group: 'Gemini 3',   thinking: true,  search: true  },
-  { id: 'gemini-3.1-flash-lite-preview',       name: 'Gemini 3.1 Flash Lite', inputPrice: 0.25,   outputPrice: 1.50,  badge: 'fast',  badgeLabel: 'Lite',  group: 'Gemini 3',   thinking: false, search: false },
-  { id: 'gemini-2.5-pro-preview-06-05',        name: 'Gemini 2.5 Pro',        inputPrice: 1.25,   outputPrice: 10.00, badge: 'smart', badgeLabel: 'Smart', group: 'Gemini 2.5', thinking: false, search: true  },
-  { id: 'gemini-2.5-flash-preview-05-20',      name: 'Gemini 2.5 Flash',      inputPrice: 0.15,   outputPrice: 0.60,  badge: 'fast',  badgeLabel: 'Fast',  group: 'Gemini 2.5', thinking: true,  search: true  },
-  { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Flash Lite', inputPrice: 0.075,  outputPrice: 0.30,  badge: 'fast',  badgeLabel: 'Lite',  group: 'Gemini 2.5', thinking: false, search: false },
-  { id: 'gemini-2.0-flash',                    name: 'Gemini 2.0 Flash',      inputPrice: 0.10,   outputPrice: 0.40,  badge: '',      badgeLabel: '',      group: 'Gemini 2.0', thinking: false, search: false },
-  { id: 'gemini-2.0-flash-lite',               name: 'Gemini 2.0 Flash Lite', inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',      group: 'Gemini 2.0', thinking: false, search: false },
-  { id: 'gemini-1.5-pro',                      name: 'Gemini 1.5 Pro',        inputPrice: 1.25,   outputPrice: 5.00,  badge: '',      badgeLabel: '',      group: 'Gemini 1.5', thinking: false, search: false },
-  { id: 'gemini-1.5-flash',                    name: 'Gemini 1.5 Flash',      inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',      group: 'Gemini 1.5', thinking: false, search: false },
-  { id: 'gemini-1.5-flash-8b',                 name: 'Gemini 1.5 Flash 8B',   inputPrice: 0.0375, outputPrice: 0.15,  badge: '',      badgeLabel: '',      group: 'Gemini 1.5', thinking: false, search: false },
+  // Gemini 3
+  { id: 'gemini-3-flash',         name: 'Gemini 3 Быстрая',       inputPrice: 0.24,   outputPrice: 2.00,  badge: 'fast',  badgeLabel: 'Быстрая', group: 'Gemini 3',   thinking: false, search: true,  thinkingBudget: 0     },
+  { id: 'gemini-3-flash',         name: 'Gemini 3 Думающая',       inputPrice: 0.24,   outputPrice: 2.00,  badge: 'smart', badgeLabel: 'Думает',  group: 'Gemini 3',   thinking: true,  search: true,  thinkingBudget: 8192, modelKey: 'gemini-3-flash-thinking' },
+  { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Про',          inputPrice: 2.00,   outputPrice: 12.00, badge: 'smart', badgeLabel: 'Про',     group: 'Gemini 3',   thinking: false, search: true,  thinkingBudget: 0     },
+  { id: 'gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Лайт',  inputPrice: 0.25,   outputPrice: 1.50,  badge: 'fast',  badgeLabel: 'Лайт',   group: 'Gemini 3',   thinking: false, search: false, thinkingBudget: 0     },
+  // Gemini 2.5
+  { id: 'gemini-2.5-flash-preview-05-20', name: 'Gemini 2.5 Быстрая', inputPrice: 0.15, outputPrice: 0.60, badge: 'fast',  badgeLabel: 'Быстрая', group: 'Gemini 2.5', thinking: false, search: true,  thinkingBudget: 0     },
+  { id: 'gemini-2.5-flash-preview-05-20', name: 'Gemini 2.5 Думающая', inputPrice: 0.15, outputPrice: 0.60, badge: 'smart', badgeLabel: 'Думает', group: 'Gemini 2.5', thinking: true,  search: true,  thinkingBudget: 8192, modelKey: 'gemini-2.5-flash-thinking' },
+  { id: 'gemini-2.5-pro-preview-06-05',  name: 'Gemini 2.5 Про',   inputPrice: 1.25,  outputPrice: 10.00, badge: 'smart', badgeLabel: 'Про',     group: 'Gemini 2.5', thinking: false, search: true,  thinkingBudget: 0     },
+  { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Лайт', inputPrice: 0.075, outputPrice: 0.30, badge: 'fast', badgeLabel: 'Лайт', group: 'Gemini 2.5', thinking: false, search: false, thinkingBudget: 0    },
+  // Gemini 2.0
+  { id: 'gemini-2.0-flash',      name: 'Gemini 2.0 Быстрая',      inputPrice: 0.10,   outputPrice: 0.40,  badge: '',      badgeLabel: '',        group: 'Gemini 2.0', thinking: false, search: false, thinkingBudget: 0     },
+  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Лайт',         inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',        group: 'Gemini 2.0', thinking: false, search: false, thinkingBudget: 0     },
+  // Gemini 1.5
+  { id: 'gemini-1.5-pro',        name: 'Gemini 1.5 Про',          inputPrice: 1.25,   outputPrice: 5.00,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0     },
+  { id: 'gemini-1.5-flash',      name: 'Gemini 1.5 Быстрая',      inputPrice: 0.075,  outputPrice: 0.30,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0     },
+  { id: 'gemini-1.5-flash-8b',   name: 'Gemini 1.5 Быстрая 8B',  inputPrice: 0.0375, outputPrice: 0.15,  badge: '',      badgeLabel: '',        group: 'Gemini 1.5', thinking: false, search: false, thinkingBudget: 0     },
 ];
 
 // ============================================================
@@ -1049,8 +1038,8 @@ const GEMINI_MODELS = [
 // ============================================================
 const DEFAULT_SETTINGS = {
   apiKey: '', thinkingLevel: 'none',
-  model: 'gemini-2.5-flash-preview-05-20', customModel: '',
-  stream: true,
+  model: 'gemini-3-flash', modelKey: 'gemini-3-flash', customModel: '',
+  stream: true, thinkingBudget: 8192,
   temperature: 1.0, topP: 0.95, maxTokens: 8192,
   presencePenalty: 0, frequencyPenalty: 0,
   keepContext: true, contextLimit: 10,
@@ -1715,6 +1704,7 @@ async function sendOrStop() {
 
     const apiMessages = buildApiMessages(chat, attachmentsCopy, null);
     const modelId = settings.customModel || settings.model;
+    const activeModel = GEMINI_MODELS.find(m => (m.modelKey || m.id) === (settings.modelKey || settings.model)) || GEMINI_MODELS.find(m => m.id === modelId);
     const requestBody = {
       model: modelId, messages: apiMessages,
       temperature: settings.temperature, top_p: settings.topP,
@@ -1724,18 +1714,13 @@ async function sendOrStop() {
     };
 
     // Нативный Google Search
-    if (settings.webSearch) {
+    if (settings.webSearch && activeModel?.search) {
       requestBody.tools = [{ type: 'function', function: { name: 'googleSearch' } }];
     }
 
-    // Thinking level (только для моделей которые поддерживают)
-    if (settings.thinkingLevel && settings.thinkingLevel !== 'none') {
-      requestBody.thinking = { type: 'enabled', budget_tokens:
-        settings.thinkingLevel === 'min'    ?  512  :
-        settings.thinkingLevel === 'low'    ?  1024 :
-        settings.thinkingLevel === 'medium' ?  4096 :
-        settings.thinkingLevel === 'high'   ?  8192 : 4096
-      };
+    // Thinking — только для думающих моделей
+    if (activeModel?.thinking) {
+      requestBody.thinking = { type: 'enabled', budget_tokens: settings.thinkingBudget || 8192 };
     }
 
     let aiText = '';
@@ -2439,10 +2424,11 @@ document.addEventListener('click', () => closeContextMenu());
 // ============================================================
 function buildModelDropdown() {
   const dropdown = document.getElementById('model-dropdown');
-  const currentId = settings.customModel || settings.model;
+  const currentKey = settings.modelKey || settings.model;
   dropdown.innerHTML = '<div class="dropdown-header">Выберите модель Gemini</div>';
   let lastGroup = '';
   GEMINI_MODELS.forEach(model => {
+    const key = model.modelKey || model.id;
     if (model.group !== lastGroup) {
       lastGroup = model.group;
       const groupEl = document.createElement('div');
@@ -2450,21 +2436,24 @@ function buildModelDropdown() {
       dropdown.appendChild(groupEl);
     }
     const option = document.createElement('div');
-    option.className = 'dropdown-option' + (model.id === currentId ? ' selected' : '');
+    option.className = 'dropdown-option' + (key === currentKey ? ' selected' : '');
     const capBadges =
-      (model.thinking ? '<span class="cap-badge think">🧠 Thinking</span>' : '') +
-      (model.search   ? '<span class="cap-badge search">🔍 Search</span>'   : '');
+      (model.thinking ? '<span class="cap-badge think">🧠</span>' : '') +
+      (model.search   ? '<span class="cap-badge search">🔍</span>'  : '');
     option.innerHTML =
       '<div class="option-info"><div class="option-name">' + model.name + '</div>' +
       '<div class="option-price"><span style="color:var(--success)">$' + model.inputPrice + '</span> / <span style="color:var(--danger)">$' + model.outputPrice + '</span> за млн токенов</div></div>' +
       '<div class="cap-badges">' + capBadges + '</div>' +
       (model.badge ? '<span class="model-badge ' + model.badge + '">' + model.badgeLabel + '</span>' : '');
     option.onclick = () => {
-      settings.model = model.id; settings.customModel = '';
+      settings.model    = model.id;
+      settings.modelKey = key;
+      settings.customModel = '';
       saveSettingsOnly(); updateModelButton(); buildModelDropdown();
       dropdown.classList.remove('open');
       document.getElementById('model-btn').classList.remove('open');
       document.getElementById('dropdown-overlay').style.display = 'none';
+      updateWebSearchChip();
     };
     dropdown.appendChild(option);
   });
@@ -2483,9 +2472,9 @@ function toggleModelDropdown() {
   }
 }
 function updateModelButton() {
-  const id    = settings.customModel || settings.model;
-  const model = GEMINI_MODELS.find(m => m.id === id);
-  document.getElementById('model-btn-label').textContent = model ? model.name : id;
+  const key   = settings.modelKey || settings.model;
+  const model = GEMINI_MODELS.find(m => (m.modelKey || m.id) === key) || GEMINI_MODELS.find(m => m.id === settings.model);
+  document.getElementById('model-btn-label').textContent = model ? model.name : (settings.customModel || settings.model);
 }
 document.addEventListener('click', e => {
   if (!document.getElementById('model-selector-wrap').contains(e.target)) {
@@ -2504,7 +2493,7 @@ function toggleWebSearch() {
 function updateWebSearchChip() {
   const chip = document.getElementById('websearch-chip');
   chip.className = 'header-chip' + (settings.webSearch ? ' active' : '');
-  const model = GEMINI_MODELS.find(m => m.id === (settings.customModel || settings.model));
+  const model = GEMINI_MODELS.find(m => (m.modelKey || m.id) === (settings.modelKey || settings.model));
   if (settings.webSearch && model && !model.search) {
     chip.title = '⚠️ Эта модель может не поддерживать Google Search';
     chip.style.borderColor = 'var(--warning)';
@@ -2531,7 +2520,7 @@ function switchSettingsTab(tab) {
 }
 function loadSettingsForm() {
   document.getElementById('s-api-key').value             = settings.apiKey;
-  document.getElementById('s-thinking-level').value      = settings.thinkingLevel || 'none';
+  document.getElementById('s-thinking-budget').value     = settings.thinkingBudget ?? 8192;
   document.getElementById('s-tavily-key') && (document.getElementById('s-tavily-key').value = '');
   document.getElementById('s-temperature').value         = settings.temperature;
   document.getElementById('v-temperature').textContent   = parseFloat(settings.temperature).toFixed(2);
@@ -2559,10 +2548,11 @@ function loadSettingsForm() {
   const table = document.getElementById('model-table');
   const header = table.querySelector('.model-table-header');
   table.innerHTML = ''; table.appendChild(header);
-  const currentId = settings.customModel || settings.model;
+  const currentKey = settings.modelKey || settings.model;
   GEMINI_MODELS.forEach(model => {
+    const key = model.modelKey || model.id;
     const row = document.createElement('div');
-    row.className = 'model-table-row' + (model.id === currentId ? ' selected' : '');
+    row.className = 'model-table-row' + (key === currentKey ? ' selected' : '');
     const caps =
       (model.thinking ? '<span class="cap-badge think">🧠</span>' : '') +
       (model.search   ? '<span class="cap-badge search">🔍</span>' : '');
@@ -2572,7 +2562,9 @@ function loadSettingsForm() {
       '<span style="color:var(--danger)"  class="model-table-price">$' + model.outputPrice + '</span>' +
       '<span style="display:flex;gap:3px;justify-content:flex-end">' + caps + (model.badge ? '<span class="model-badge ' + model.badge + '">' + model.badgeLabel + '</span>' : '') + '</span>';
     row.onclick = () => {
-      settings.model = model.id; settings.customModel = '';
+      settings.model    = model.id;
+      settings.modelKey = key;
+      settings.customModel = '';
       document.getElementById('s-custom-model').value = '';
       table.querySelectorAll('.model-table-row').forEach(r => r.classList.remove('selected'));
       row.classList.add('selected');
@@ -2591,7 +2583,7 @@ function applyTheme(theme) { document.documentElement.setAttribute('data-theme',
 
 async function saveSettings() {
   settings.apiKey           = document.getElementById('s-api-key').value.trim();
-  settings.thinkingLevel    = document.getElementById('s-thinking-level').value;
+  settings.thinkingBudget   = parseInt(document.getElementById('s-thinking-budget').value) || 8192;
   settings.temperature      = parseFloat(document.getElementById('s-temperature').value);
   settings.topP             = parseFloat(document.getElementById('s-top-p').value);
   settings.maxTokens        = parseInt(document.getElementById('s-max-tokens').value) || 8192;
