@@ -1091,13 +1091,14 @@ function userRef() {
 
 async function loadUserData() {
   try {
-    // Load settings
+    // Load settings FIRST — применяем до показа UI чтобы не было мигания
     const settingsDoc = await userRef().collection('data').doc('settings').get();
     if (settingsDoc.exists) {
       settings = { ...DEFAULT_SETTINGS, ...settingsDoc.data() };
-      // Принудительно ограничиваем контекст до 10
       if (settings.contextLimit > 10) settings.contextLimit = 10;
     }
+    // Сразу применяем настройки к UI — модель, тема и тд
+    applySettingsToUI();
 
     // Load active tab
     const metaDoc = await userRef().collection('data').doc('meta').get();
@@ -2294,7 +2295,9 @@ function buildModelDropdown() {
     option.onclick = () => {
       settings.model = model.id; settings.customModel = '';
       saveSettingsOnly(); updateModelButton(); buildModelDropdown();
-      dropdown.classList.remove('open'); document.getElementById('model-btn').classList.remove('open');
+      dropdown.classList.remove('open');
+      document.getElementById('model-btn').classList.remove('open');
+      document.getElementById('dropdown-overlay').style.display = 'none';
     };
     dropdown.appendChild(option);
   });
