@@ -666,10 +666,10 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
           </svg>
         </button>
       </div>
-      <div id="balance-chip" onclick="openSettings('api')" title="Расчётный баланс — нажмите для синхронизации" style="cursor:pointer">
+      <div id="balance-chip" onclick="openSettings('api')" title="Нажмите для синхронизации баланса" style="cursor:pointer">
         <div class="balance-dot" id="balance-dot"></div>
         <span class="balance-text" id="balance-text">Баланс: —</span>
-        <span class="balance-refresh" title="Синхронизировать" onclick="event.stopPropagation();syncBalance()" style="cursor:pointer;font-size:14px">↺</span>
+        <a href="https://www.cometapi.com/console/credits" target="_blank" onclick="event.stopPropagation()" title="Открыть баланс CometAPI" style="color:var(--text-dim);font-size:16px;line-height:1;text-decoration:none">↗</a>
       </div>
       <button id="settings-btn" onclick="openSettings()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2150,11 +2150,11 @@ function updateBalanceDisplay() {
   const text = document.getElementById('balance-text');
   const dot  = document.getElementById('balance-dot');
   if (settings.balance === null || settings.balance === undefined) {
-    text.textContent = 'Баланс: — ↺';
+    text.textContent = 'Баланс: —';
     dot.className = 'balance-dot';
   } else {
     const b = parseFloat(settings.balance);
-    text.textContent = '$' + b.toFixed(4);
+    text.textContent = 'Баланс: ' + b.toFixed(2).replace('.', ',');
     dot.className = 'balance-dot' + (b < 0.1 ? ' error' : b < 0.5 ? ' loading' : '');
   }
 }
@@ -2644,15 +2644,11 @@ async function saveSettings() {
   settings.appName          = document.getElementById('s-app-name').value.trim() || 'Gemini';
   settings.imgMaxSize       = parseInt(document.getElementById('s-img-max-size').value);
   settings.imgQuality       = parseFloat(document.getElementById('s-img-quality').value);
-  const customModel = document.getElementById('s-custom-model').value.trim();
-  if (customModel) settings.model = customModel;
-  settings.customModel = customModel;
   await saveSettingsOnly();
   closeSettings();
   applySettingsToUI();
   updateApiWarning();
   updateWebSearchChip();
-  if (settings.apiKey) fetchBalance();
 }
 
 // ============================================================
@@ -2746,7 +2742,7 @@ function initApp() {
     renderTabs();
     renderMessages();
   }
-  if (settings.apiKey) setTimeout(fetchBalance, 600);
+  if (settings.apiKey) updateBalanceDisplay();
   setTimeout(() => document.getElementById('textarea').focus(), 200);
 }
 
