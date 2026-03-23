@@ -1004,12 +1004,19 @@ async function saveSingleChat(chat) {
 }
 
 async function deleteChatFromDB(chatId) {
+  console.log('deleteChatFromDB called', chatId, 'user:', currentUser?.uid);
   if (!currentUser || !db) {
     chats = chats.filter(c => c.id !== chatId);
     try { localStorage.setItem('gemini_chats', JSON.stringify(chats)); } catch(e) {}
     return;
   }
-  try { await userRef().collection('chats').doc(chatId).delete(); } catch (e) { console.error(e); }
+  try {
+    console.log('Deleting from Firestore...');
+    await userRef().collection('chats').doc(chatId).delete();
+    console.log('Deleted successfully');
+  } catch (e) {
+    console.error('Delete error:', e);
+  }
 }
 
 async function saveSettingsOnly() {
