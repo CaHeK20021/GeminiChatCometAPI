@@ -130,7 +130,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 #login-error { font-size: 12.5px; color: var(--danger); margin-top: 12px; display: none; }
 
 /* ===== LAYOUT ===== */
-#app { display: flex; height: 100vh; }
+#app { display: flex; height: 100vh; height: 100dvh; }
 
 /* ===== SIDEBAR ===== */
 #sidebar {
@@ -1318,7 +1318,9 @@ function buildMessageRow(msg, msgIndex, totalMessages) {
   if (msg.role === 'user') metaRow.style.flexDirection = 'row-reverse';
   const meta = document.createElement('div');
   meta.className = 'message-meta';
-  meta.textContent = formatTime(msg.timestamp);
+  const tokenCount = msg.text ? Math.ceil(msg.text.length / 4) : 0;
+  const tokenIcon = msg.role === 'user' ? '↑' : '↓';
+  meta.textContent = formatTime(msg.timestamp) + (tokenCount ? '  ' + tokenIcon + tokenCount : '');
   const actions = document.createElement('div');
   actions.className = 'message-actions';
   if (msg.role === 'ai') {
