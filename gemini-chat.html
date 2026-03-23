@@ -846,6 +846,27 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
           <input type="text" class="form-input" id="s-app-name" value="Gemini" placeholder="Gemini">
         </div>
         <div class="section-divider"></div>
+        <div class="form-group">
+          <label class="form-label">Макс. размер изображения</label>
+          <div class="form-hint">Длинная сторона в пикселях. Меньше = дешевле токены. По умолчанию 1280px — отличное качество.</div>
+          <select class="form-select" id="s-img-max-size">
+            <option value="512">512px — эконом (мелкие детали могут смазаться)</option>
+            <option value="768">768px — баланс</option>
+            <option value="1280">1280px — высокое качество (рекомендуем)</option>
+            <option value="1920">1920px — максимум</option>
+            <option value="0">Без сжатия (оригинал)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Качество JPEG сжатия</label>
+          <div class="form-hint">85% — почти незаметна разница с оригиналом. Ниже = меньше токенов.</div>
+          <div class="range-group">
+            <input type="range" class="range-input" id="s-img-quality" min="0.4" max="1" step="0.05" value="0.85"
+              oninput="document.getElementById('v-img-quality').textContent = Math.round(this.value * 100) + '%'">
+            <span class="range-value" id="v-img-quality">85%</span>
+          </div>
+        </div>
+        <div class="section-divider"></div>
         <button class="btn-danger" style="width:100%" onclick="confirmClearAll()">&#128465;&#65039; Очистить все чаты</button>
         <div style="margin-top:8px">
           <button class="btn-danger" style="width:100%;opacity:0.75" onclick="confirmResetAll()">&#9888;&#65039; Сбросить все данные аккаунта</button>
@@ -924,6 +945,7 @@ const DEFAULT_SETTINGS = {
   webSearch: false,
   renderMarkdown: true, highlight: true,
   theme: 'dark', appName: 'Gemini',
+  imgMaxSize: 1280, imgQuality: 0.85,
 };
 
 let settings           = { ...DEFAULT_SETTINGS };
@@ -1964,10 +1986,34 @@ function addAnyFile(file) {
 function addImageFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
-    const dataUrl = e.target.result;
-    pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: file.type, name: file.name });
-    renderAttachmentPreviews();
-    showPasteHint('\uD83D\uDDBC\uFE0F Изображение добавлено!');
+    const maxSize = parseInt(settings.imgMaxSize) || 1280;
+    const quality = parseFloat(settings.imgQuality) || 0.85;
+
+    if (maxSize === 0) {
+      // Без сжатия
+      const dataUrl = e.target.result;
+      pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: file.type, name: file.name });
+      renderAttachmentPreviews();
+      showPasteHint('🖼️ Изображение добавлено!');
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+        else { width = Math.round(width * maxSize / height); height = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name });
+      renderAttachmentPreviews();
+      showPasteHint('🖼️ Изображение добавлено! (' + width + '×' + height + ')');
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -2153,6 +2199,9 @@ function loadSettingsForm() {
   document.getElementById('s-app-name').value            = settings.appName || 'Gemini';
   document.getElementById('s-custom-model').value        = settings.customModel || '';
   document.getElementById('s-theme').value               = settings.theme;
+  document.getElementById('s-img-max-size').value        = String(settings.imgMaxSize ?? 1280);
+  document.getElementById('s-img-quality').value         = settings.imgQuality ?? 0.85;
+  document.getElementById('v-img-quality').textContent   = Math.round((settings.imgQuality ?? 0.85) * 100) + '%';
 
   document.getElementById('toggle-stream').className    = 'toggle-switch' + (settings.stream         ? ' on' : '');
   document.getElementById('toggle-context').className   = 'toggle-switch' + (settings.keepContext    ? ' on' : '');
@@ -2201,6 +2250,8 @@ async function saveSettings() {
   settings.contextLimit     = parseInt(document.getElementById('s-context-limit').value);
   if (isNaN(settings.contextLimit) || settings.contextLimit < 0) settings.contextLimit = 10;
   settings.appName          = document.getElementById('s-app-name').value.trim() || 'Gemini';
+  settings.imgMaxSize       = parseInt(document.getElementById('s-img-max-size').value);
+  settings.imgQuality       = parseFloat(document.getElementById('s-img-quality').value);
   const customModel = document.getElementById('s-custom-model').value.trim();
   if (customModel) settings.model = customModel;
   settings.customModel = customModel;
