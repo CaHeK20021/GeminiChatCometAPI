@@ -696,12 +696,6 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
         <div id="model-dropdown"></div>
       </div>
       <div id="header-spacer"></div>
-      <button class="header-chip" id="websearch-chip" onclick="toggleWebSearch()" title="Веб-поиск через Tavily API">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <span>Веб-поиск</span>
-      </button>
     </div>
 
     <div id="messages-area">
@@ -731,6 +725,11 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 <line x1="12" y1="19" x2="12" y2="23"/>
                 <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+            <button class="input-action-btn" id="websearch-chip" onclick="toggleWebSearch()" title="Google Search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
             </button>
             <div style="flex:1"></div>
@@ -821,8 +820,12 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
         </div>
         <div class="form-group">
           <label class="form-label">Максимальная длина ответа</label>
-          <div class="form-hint">В токенах (~4 символа). 0 — без ограничений.</div>
-          <input type="number" class="form-input" id="s-max-tokens" value="8192" min="0" max="65536" step="256">
+          <div class="form-hint">В токенах. 0 — без ограничений.</div>
+          <div class="range-group">
+            <input type="range" class="range-input" id="s-max-tokens" min="0" max="32768" step="512" value="8192"
+              oninput="document.getElementById('v-max-tokens').textContent = this.value == 0 ? '∞' : this.value">
+            <span class="range-value" id="v-max-tokens">8192</span>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Штраф за повторение тем</label>
@@ -844,8 +847,12 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
         </div>
         <div class="form-group">
           <label class="form-label">Токены на размышление 🧠</label>
-          <div class="form-hint">Сколько токенов думающая модель может потратить на внутренние рассуждения. Больше = глубже но дороже. Работает только с «Думающими» моделями.</div>
-          <input type="number" class="form-input" id="s-thinking-budget" value="8192" min="512" max="32768" step="512">
+          <div class="form-hint">Сколько токенов думающая модель тратит на внутренние рассуждения. Больше = глубже но дороже. Только для «Думающих» моделей.</div>
+          <div class="range-group">
+            <input type="range" class="range-input" id="s-thinking-budget" min="512" max="32768" step="512" value="8192"
+              oninput="document.getElementById('v-thinking-budget').textContent = parseInt(this.value).toLocaleString()">
+            <span class="range-value" id="v-thinking-budget">8 192</span>
+          </div>
         </div>
         <div class="section-divider"></div>
         <div class="toggle-row">
@@ -865,7 +872,10 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
       <!-- System Prompt Tab -->
       <div class="settings-section" id="stab-system">
         <div class="form-group">
-          <label class="form-label">Системная инструкция</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <label class="form-label">Системная инструкция</label>
+            <button class="btn-secondary" style="padding:4px 10px;font-size:12px;flex-shrink:0" onclick="resetSystemPrompt()">↺ Сбросить до базовой</button>
+          </div>
           <div class="form-hint">Задаёт поведение и личность модели.</div>
           <textarea class="form-textarea" id="s-system-prompt" rows="12"
             placeholder="Например: Ты полезный помощник. Отвечай на русском языке..."></textarea>
@@ -1134,13 +1144,25 @@ function userRef() {
 
 async function loadUserData() {
   try {
-    // Load settings FIRST — применяем до показа UI чтобы не было мигания
+    // Сначала загружаем из localStorage кеша — мгновенно, без мигания
+    const cached = localStorage.getItem('gemini_settings_cache');
+    if (cached) {
+      try {
+        settings = { ...DEFAULT_SETTINGS, ...JSON.parse(cached) };
+        if (settings.contextLimit > 10) settings.contextLimit = 10;
+        applySettingsToUI();
+      } catch(e) {}
+    }
+
+    // Потом загружаем из Firebase и обновляем если отличается
     const settingsDoc = await userRef().collection('data').doc('settings').get();
     if (settingsDoc.exists) {
       settings = { ...DEFAULT_SETTINGS, ...settingsDoc.data() };
       if (settings.contextLimit > 10) settings.contextLimit = 10;
+      // Сохраняем в кеш для следующего открытия
+      try { localStorage.setItem('gemini_settings_cache', JSON.stringify(settings)); } catch(e) {}
     }
-    // Сразу применяем настройки к UI — модель, тема и тд
+    // Применяем финальные настройки
     applySettingsToUI();
 
     // Load active tab
@@ -1214,7 +1236,10 @@ async function saveSettingsOnly() {
     try { localStorage.setItem('gemini_settings', JSON.stringify(settings)); } catch(e) {}
     return;
   }
-  try { await userRef().collection('data').doc('settings').set(settings); } catch (e) { console.error(e); }
+  try {
+    localStorage.setItem('gemini_settings_cache', JSON.stringify(settings));
+    await userRef().collection('data').doc('settings').set(settings);
+  } catch (e) { console.error(e); }
 }
 
 async function saveActiveMeta() {
@@ -2491,17 +2516,24 @@ function toggleWebSearch() {
   saveSettingsOnly(); updateWebSearchChip();
 }
 function updateWebSearchChip() {
-  const chip = document.getElementById('websearch-chip');
-  chip.className = 'header-chip' + (settings.webSearch ? ' active' : '');
+  const btn = document.getElementById('websearch-chip');
+  if (!btn) return;
   const model = GEMINI_MODELS.find(m => (m.modelKey || m.id) === (settings.modelKey || settings.model));
-  if (settings.webSearch && model && !model.search) {
-    chip.title = '⚠️ Эта модель может не поддерживать Google Search';
-    chip.style.borderColor = 'var(--warning)';
-    chip.style.color = 'var(--warning)';
+  if (settings.webSearch) {
+    btn.style.background    = 'var(--accent-soft)';
+    btn.style.borderColor   = 'var(--accent)';
+    btn.style.color         = 'var(--accent)';
+    btn.title = 'Google Search — вкл';
+  } else if (model && !model.search) {
+    btn.style.background  = '';
+    btn.style.borderColor = 'var(--warning)';
+    btn.style.color       = 'var(--warning)';
+    btn.title = '⚠️ Эта модель может не поддерживать Google Search';
   } else {
-    chip.title = 'Google Search (' + (settings.webSearch ? 'вкл' : 'выкл') + ')';
-    chip.style.borderColor = '';
-    chip.style.color = '';
+    btn.style.background  = '';
+    btn.style.borderColor = '';
+    btn.style.color       = '';
+    btn.title = 'Google Search — выкл';
   }
 }
 
@@ -2520,13 +2552,15 @@ function switchSettingsTab(tab) {
 }
 function loadSettingsForm() {
   document.getElementById('s-api-key').value             = settings.apiKey;
-  document.getElementById('s-thinking-budget').value     = settings.thinkingBudget ?? 8192;
+  document.getElementById('s-thinking-budget').value        = settings.thinkingBudget ?? 8192;
+  document.getElementById('v-thinking-budget').textContent  = parseInt(settings.thinkingBudget ?? 8192).toLocaleString();
   document.getElementById('s-tavily-key') && (document.getElementById('s-tavily-key').value = '');
   document.getElementById('s-temperature').value         = settings.temperature;
   document.getElementById('v-temperature').textContent   = parseFloat(settings.temperature).toFixed(2);
   document.getElementById('s-top-p').value               = settings.topP;
   document.getElementById('v-top-p').textContent         = parseFloat(settings.topP).toFixed(2);
   document.getElementById('s-max-tokens').value          = settings.maxTokens;
+  document.getElementById('v-max-tokens').textContent    = settings.maxTokens == 0 ? '∞' : settings.maxTokens;
   document.getElementById('s-presence-penalty').value    = settings.presencePenalty;
   document.getElementById('v-presence-penalty').textContent = parseFloat(settings.presencePenalty).toFixed(1);
   document.getElementById('s-frequency-penalty').value   = settings.frequencyPenalty;
@@ -2581,12 +2615,16 @@ function toggleSetting(key) {
 
 function applyTheme(theme) { document.documentElement.setAttribute('data-theme', theme); settings.theme = theme; }
 
+function resetSystemPrompt() {
+  document.getElementById('s-system-prompt').value = DEFAULT_SETTINGS.systemPrompt;
+}
+
 async function saveSettings() {
   settings.apiKey           = document.getElementById('s-api-key').value.trim();
   settings.thinkingBudget   = parseInt(document.getElementById('s-thinking-budget').value) || 8192;
   settings.temperature      = parseFloat(document.getElementById('s-temperature').value);
   settings.topP             = parseFloat(document.getElementById('s-top-p').value);
-  settings.maxTokens        = parseInt(document.getElementById('s-max-tokens').value) || 8192;
+  settings.maxTokens        = parseInt(document.getElementById('s-max-tokens').value);
   settings.presencePenalty  = parseFloat(document.getElementById('s-presence-penalty').value);
   settings.frequencyPenalty = parseFloat(document.getElementById('s-frequency-penalty').value);
   settings.systemPrompt     = document.getElementById('s-system-prompt').value;
