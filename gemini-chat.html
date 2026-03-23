@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -1370,6 +1371,8 @@ function renderMessages() {
   }
   inner.innerHTML = '';
   chat.messages.forEach((msg, i) => inner.appendChild(buildMessageRow(msg, i, chat.messages.length)));
+  // Рендерим KaTeX на всех AI сообщениях после добавления в DOM
+  inner.querySelectorAll('.message-row.ai .message-bubble').forEach(b => renderKatex(b));
   scrollToBottom();
 }
 
@@ -1447,7 +1450,7 @@ function buildMessageRow(msg, msgIndex, totalMessages) {
       try { hljs.highlightElement(block); } catch(e) {}
     });
   }
-  if (msg.role === 'ai') { addCodeBlockHeaders(bubble); renderKatex(bubble); renderMermaid(bubble); }
+  if (msg.role === 'ai') { addCodeBlockHeaders(bubble); renderMermaid(bubble); }
 
   const metaRow = document.createElement('div');
   metaRow.style.cssText = 'display:flex;gap:7px;align-items:center';
@@ -1552,7 +1555,13 @@ function appendMessageToDOM(msg) {
   inner.querySelector('#empty-state')?.remove();
   const chat = getActiveChat();
   const idx = chat ? chat.messages.length - 1 : 0;
-  inner.appendChild(buildMessageRow(msg, idx, chat ? chat.messages.length : 1));
+  const row = buildMessageRow(msg, idx, chat ? chat.messages.length : 1);
+  inner.appendChild(row);
+  // Рендерим KaTeX после добавления в DOM
+  if (msg.role === 'ai') {
+    const bubble = row.querySelector('.message-bubble');
+    if (bubble) renderKatex(bubble);
+  }
   scrollToBottom();
 }
 
@@ -1609,8 +1618,13 @@ async function performWebSearch(query) {
 // ============================================================
 // SEND / STOP
 // ============================================================
+let isSending = false; // Защита от двойной отправки
+
 async function sendOrStop() {
   if (isGenerating) { stopGeneration(); return; }
+  if (isSending) return; // Блокируем двойной клик
+  isSending = true;
+  setTimeout(() => { isSending = false; }, 1000); // Сбрасываем через 1 сек
 
   const textarea = document.getElementById('textarea');
   const userText = textarea.value.trim();
@@ -2008,21 +2022,37 @@ async function saveEdit(msgId, btn) {
   const newText = wrap?._ta?.value?.trim();
   if (!newText) return;
 
+  // Сохраняем изображения из оригинального сообщения
+  const originalMsg = chat.messages[msgIndex];
+  const originalImages = originalMsg.images || [];
+  const originalFiles  = originalMsg.files  || [];
+
   // Update message and remove all after it
   chat.messages[msgIndex].text = newText;
   chat.messages.splice(msgIndex + 1);
   await saveSingleChat(chat);
   renderMessages();
 
-  // Re-send from this point
+  // Re-send from this point — передаём оригинальные вложения
   if (!settings.apiKey) return;
   setGenerating(true);
+
+  // Восстанавливаем attachments из сохранённых изображений
+  const attachmentsForApi = originalImages.map(dataUrl => ({
+    type: 'image',
+    dataUrl,
+    base64: dataUrl.split(',')[1],
+    mimeType: dataUrl.split(';')[0].split(':')[1],
+    name: 'image',
+  }));
+
   try {
-    const apiMessages = buildApiMessages(chat, [], null);
+    const apiMessages = buildApiMessages(chat, attachmentsForApi, null);
     const requestBody = {
       model: settings.customModel || settings.model, messages: apiMessages,
       temperature: settings.temperature, top_p: settings.topP,
       ...(settings.maxTokens > 0 ? { max_tokens: settings.maxTokens } : {}),
+      ...(settings.webSearch ? { tools: [{ type: 'function', function: { name: 'googleSearch' } }] } : {}),
     };
     let aiText = '';
     if (settings.stream) {
