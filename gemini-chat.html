@@ -585,8 +585,18 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 /* ===== TOP RIGHT BALANCE ===== */
 #balance-corner-wrap {
   position: fixed; top: 8px; right: 16px; z-index: 50;
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 4px;
 }
+#share-corner-btn {
+  width: 34px; height: 34px;
+  display: none; align-items: center; justify-content: center;
+  background: transparent; border: none; border-radius: 9px;
+  color: var(--text-muted); cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  padding: 0; opacity: 0; transition: opacity 0.2s, background var(--transition), color var(--transition);
+}
+#share-corner-btn:hover { background: var(--accent-soft); color: var(--accent); }
+#share-corner-btn.visible { display: flex; opacity: 1; }
 #balance-corner {
   font-size: 20px; font-weight: 700;
   color: #7c3aed; font-family: var(--mono);
@@ -1072,6 +1082,13 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 </div>
 
 <div id="balance-corner-wrap">
+  <button id="share-corner-btn" onclick="shareActiveChat()" title="Поделиться чатом">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+  </button>
   <div id="balance-corner" onclick="toggleBalancePopup()" title="Синхронизировать баланс">$</div>
 </div>
 
@@ -1422,6 +1439,7 @@ function newChat() {
   const inner = document.getElementById('messages-inner');
   inner.innerHTML = '';
   inner.appendChild(buildEmptyState());
+  updateShareButton();
   document.getElementById('textarea').focus();
   closeSidebar();
 }
@@ -1432,6 +1450,7 @@ function setActiveTab(id) {
   saveActiveMeta();
   renderMessages();
   renderTabs();
+  updateShareButton();
 }
 
 function getActiveChat() {
@@ -1502,10 +1521,9 @@ function renderTabs() {
     item.innerHTML =
       '<span class="tab-icon">' + (chat.messages.length ? '\uD83D\uDCAC' : '\u2736') + '</span>' +
       '<span class="tab-name">'  + escapeHtml(chat.title) + '</span>' +
-      '<button class="tab-share" onclick="shareChat(\'' + chat.id + '\', event)" title="Поделиться">🔗</button>' +
       '<button class="tab-delete" onclick="deleteChat(\'' + chat.id + '\', event)" title="Удалить">\u00D7</button>';
     item.addEventListener('click', e => {
-      if (!e.target.classList.contains('tab-delete') && !e.target.classList.contains('tab-share')) {
+      if (!e.target.classList.contains('tab-delete')) {
         setActiveTab(chat.id);
         closeSidebar();
       }
@@ -1523,6 +1541,7 @@ function renderMessages() {
   if (!chat || !chat.messages.length) {
     inner.innerHTML = '';
     inner.appendChild(buildEmptyState());
+    updateShareButton();
     return;
   }
   inner.innerHTML = '';
@@ -1530,6 +1549,7 @@ function renderMessages() {
   // Рендерим KaTeX на всех AI сообщениях после добавления в DOM
   inner.querySelectorAll('.message-row.ai .message-bubble').forEach(b => renderKatex(b));
   scrollToBottom();
+  updateShareButton();
 }
 
 function buildEmptyState() {
@@ -3015,6 +3035,22 @@ function buildSharedMessageRow(msg) {
 function copySharedLink() {
   navigator.clipboard.writeText(window.location.href).catch(() => {});
   showShareToast('🔗 Ссылка скопирована!');
+}
+
+// Поделиться текущим активным чатом (кнопка в шапке)
+async function shareActiveChat() {
+  const chat = getActiveChat();
+  if (!chat) return;
+  await shareChat(chat.id, null);
+}
+
+// Показывает/скрывает кнопку шаринга в зависимости от активного чата
+function updateShareButton() {
+  const btn = document.getElementById('share-corner-btn');
+  if (!btn) return;
+  const chat = getActiveChat();
+  const hasMessages = !!(chat && chat.messages && chat.messages.length > 0);
+  btn.classList.toggle('visible', hasMessages);
 }
 
 // Импортировать поделённый чат к себе
