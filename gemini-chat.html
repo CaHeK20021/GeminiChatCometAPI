@@ -3046,6 +3046,10 @@ async function importSharedChat() {
 }
 
 
+// ============================================================
+// INIT
+// ============================================================
+function applySettingsToUI() {
   document.documentElement.setAttribute('data-theme', settings.theme || 'dark');
   updateModelButton(); buildModelDropdown(); updateWebSearchChip(); updateBalanceDisplay();
   const name = settings.appName || 'Gemini';
