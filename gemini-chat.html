@@ -242,15 +242,25 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 
 /* ===== SHARE TOAST ===== */
 #share-toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  background: var(--surface); border: 1px solid var(--accent-glow);
-  border-radius: 99px; padding: 9px 18px;
-  font-size: 13px; color: var(--accent); font-weight: 500;
-  pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  position: fixed; bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px; padding: 13px 22px;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
   z-index: 9999; white-space: nowrap;
-  box-shadow: 0 4px 20px rgba(77,159,255,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
-#share-toast.show { opacity: 1; }
+#share-toast .toast-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--accent-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+#share-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 #sidebar-footer { flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px; }
 #balance-chip { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all var(--transition); margin-bottom: 7px; }
@@ -1120,7 +1130,7 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 </div>
 
 <!-- SHARE TOAST -->
-<div id="share-toast">🔗 Ссылка скопирована!</div>
+<div id="share-toast"><span class="toast-icon">🔗</span><span id="share-toast-text">Ссылка скопирована!</span></div>
 
 <script>
 // ============================================================
@@ -2885,10 +2895,12 @@ async function shareChat(chatId, event) {
   }
   const chat = chats.find(c => c.id === chatId);
   if (!chat || !chat.messages.length) {
-    showShareToast('⚠️ Нечего шарить — чат пуст');
+    showShareToast('Чат пуст', '⚠️');
     return;
   }
 
+  // Мгновенный фидбек — не ждём Firebase
+  showShareToast('Создаём ссылку...', '⏳');
   showSync('Создание ссылки...');
   try {
     const shareId = generateShareId();
@@ -2915,19 +2927,25 @@ async function shareChat(chatId, event) {
 
     const url = window.location.origin + window.location.pathname + '?share=' + shareId;
     await navigator.clipboard.writeText(url);
-    showShareToast('🔗 Ссылка скопирована!');
+    showShareToast('Ссылка скопирована!', '🔗');
   } catch (e) {
     console.error('shareChat error:', e);
-    showShareToast('❌ Ошибка: ' + e.message);
+    showShareToast('Ошибка: ' + e.message, '❌');
   }
   hideSync();
 }
 
-function showShareToast(text) {
+function showShareToast(text, icon) {
   const toast = document.getElementById('share-toast');
-  toast.textContent = text;
+  const textEl = document.getElementById('share-toast-text');
+  const iconEl = toast.querySelector('.toast-icon');
+  if (textEl) textEl.textContent = text;
+  if (iconEl) iconEl.textContent = icon || '🔗';
+  toast.classList.remove('show');
+  void toast.offsetWidth; // reflow для перезапуска анимации
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2800);
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => toast.classList.remove('show'), 2800);
 }
 
 // Загрузка поделённого чата по shareId из URL
@@ -2940,10 +2958,12 @@ async function loadSharedChatFromUrl() {
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('login-screen').classList.add('hidden');
 
-  // Прячем sidebar и input — режим read-only
+  // Прячем sidebar, input, header и баланс — режим read-only
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('input-wrap').style.display = 'none';
   document.getElementById('hamburger-btn').style.display = 'none';
+  document.getElementById('header').style.display = 'none';
+  document.getElementById('balance-corner-wrap').style.display = 'none';
 
   const inner = document.getElementById('messages-inner');
   inner.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-dim);font-size:14px">⌛ Загрузка чата...</div>';
