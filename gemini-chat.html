@@ -1179,6 +1179,7 @@ let activeTabId        = null;
 let isGenerating       = false;
 let abortController    = null;
 let pendingAttachments = [];
+let pendingImageLoads  = 0; // Счётчик незавершённых загрузок изображений
 let confirmCallback    = null;
 let currentUser        = null;
 let db                 = null;
@@ -1348,7 +1349,15 @@ async function saveSingleChat(chat) {
   }
   showSync('Сохранение...');
   try {
-    await userRef().collection('chats').doc(chat.id).set(chat);
+    // Убираем base64 изображений перед сохранением — Firestore лимит 1 МБ
+    const safeChat = {
+      ...chat,
+      messages: (chat.messages || []).map(m => ({
+        ...m,
+        images: (m.images && m.images.length) ? m.images.map(() => '') : undefined,
+      })),
+    };
+    await userRef().collection('chats').doc(chat.id).set(safeChat);
   } catch (e) { console.error('saveSingleChat error:', e); }
   hideSync();
 }
@@ -1808,6 +1817,15 @@ let isSending = false; // Защита от двойной отправки
 
 async function sendOrStop() {
   if (isGenerating) { stopGeneration(); return; }
+  // Ждём завершения всех асинхронных загрузок изображений
+  if (pendingImageLoads > 0) {
+    await new Promise(resolve => {
+      const check = setInterval(() => {
+        if (pendingImageLoads <= 0) { clearInterval(check); resolve(); }
+      }, 50);
+      setTimeout(() => { clearInterval(check); resolve(); }, 10000); // таймаут 10с
+    });
+  }
   if (isSending) return; // Блокируем двойной клик
   isSending = true;
   setTimeout(() => { isSending = false; }, 1000); // Сбрасываем через 1 сек
@@ -2365,6 +2383,7 @@ function addAnyFile(file) {
   else                                       addTextFile(file);
 }
 function addImageFile(file) {
+  pendingImageLoads++; // Фиксируем начало асинхронной загрузки
   const reader = new FileReader();
   reader.onload = e => {
     const maxSize = parseInt(settings.imgMaxSize) || 1280;
@@ -2376,6 +2395,7 @@ function addImageFile(file) {
       pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: file.type, name: file.name });
       renderAttachmentPreviews();
       showPasteHint('🖼️ Изображение добавлено!');
+      pendingImageLoads--; // Загрузка завершена
       return;
     }
 
@@ -2393,9 +2413,12 @@ function addImageFile(file) {
       pendingAttachments.push({ type: 'image', dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name, origFile: file });
       renderAttachmentPreviews();
       showPasteHint('🖼️ Изображение добавлено! (' + width + '×' + height + ')');
+      pendingImageLoads--; // Загрузка и resize завершены
     };
+    img.onerror = () => { pendingImageLoads--; }; // На случай ошибки
     img.src = e.target.result;
   };
+  reader.onerror = () => { pendingImageLoads--; }; // На случай ошибки FileReader
   reader.readAsDataURL(file);
 }
 function addPdfFile(file) {
